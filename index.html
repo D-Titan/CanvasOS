@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>CanvasOS</title>
+    
+    <script src="registry.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'Google Sans Flex', 'system-ui', 'sans-serif'] },
+                    colors: { glass: 'rgba(255, 255, 255, 0.6)', glassDark: 'rgba(15, 23, 42, 0.6)' },
+                    animation: {
+                        'pop': 'pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- Corrected Google Fonts Links -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { overflow: hidden; touch-action: none; -webkit-font-smoothing: antialiased; }
+        .glass-panel { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
+        .dark .glass-panel { border: 1px solid rgba(255, 255, 255, 0.05); }
+        .bg-dot-pattern { background-image: radial-gradient(#94a3b8 2px, transparent 2px); background-size: clamp(20px, 4vw, 32px) clamp(20px, 4vw, 32px); }
+        .dark .bg-dot-pattern { background-image: radial-gradient(#27272a 2px, transparent 2px); }
+        @keyframes brandReveal { 0% { opacity: 0; transform: scale(0.85) translateY(15px); filter: blur(12px); letter-spacing: -0.05em; } 50% { opacity: 1; filter: blur(0px); } 100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); letter-spacing: normal; } }
+        .animate-brand-reveal { animation: brandReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes dotWarp { 0% { transform: scale(0.95); opacity: 0; } 30% { transform: scale(1.03); opacity: 1; } 50% { transform: scale(0.98); } 75% { transform: scale(1.01); } 100% { transform: scale(1); opacity: 1; } }
+        .animate-dot-warp { animation: dotWarp 1s ease-out forwards; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+        .dark ::-webkit-scrollbar-thumb { background: #3f3f46; } 
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        .window-animate { transition: left 0.3s cubic-bezier(0.2, 0, 0, 1), top 0.3s cubic-bezier(0.2, 0, 0, 1), width 0.3s cubic-bezier(0.2, 0, 0, 1), height 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease, opacity 0.3s ease; }
+        .resize-handle { position: absolute; z-index: 50; }
+        .resize-n { top: -4px; left: 0; width: 100%; height: 8px; cursor: n-resize; }
+        .resize-s { bottom: -4px; left: 0; width: 100%; height: 8px; cursor: s-resize; }
+        .resize-e { top: 0; right: -4px; width: 8px; height: 100%; cursor: e-resize; }
+        .resize-w { top: 0; left: -4px; width: 8px; height: 100%; cursor: w-resize; }
+        .resize-ne { top: -4px; right: -4px; width: 12px; height: 12px; cursor: ne-resize; }
+        .resize-nw { top: -4px; left: -4px; width: 12px; height: 12px; cursor: nw-resize; }
+        .resize-se { bottom: -4px; right: -4px; width: 12px; height: 12px; cursor: se-resize; }
+        .resize-sw { bottom: -4px; left: -4px; width: 12px; height: 12px; cursor: sw-resize; }
+        .resize-gap-v { position: absolute; width: 16px; margin-left: -8px; cursor: col-resize; z-index: 1000; transition: background-color 0.2s; }
+        .resize-gap-v::after { content: ''; display: block; width: 2px; height: 100%; background: transparent; margin: auto; transition: background 0.2s; }
+        .resize-gap-v:hover::after, .resize-gap-v:active::after { background: rgba(59, 130, 246, 0.8); }
+        .resize-gap-h { position: absolute; height: 16px; margin-top: -8px; width: 100%; cursor: row-resize; z-index: 1000; transition: background-color 0.2s; }
+        .resize-gap-h::after { content: ''; display: block; height: 2px; width: 100%; background: transparent; margin: auto; transition: background 0.2s; top: 7px; position: relative;}
+        .resize-gap-h:hover::after, .resize-gap-h:active::after { background: rgba(59, 130, 246, 0.8); }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors duration-500 text-sm sm:text-base">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+        const { createPortal } = ReactDOM;
+
+        const SIDEBAR_COLLAPSED_W = 70;
+        const SIDEBAR_EXPANDED_W = 240;
+        const MIN_WIN_WIDTH = 260;
+        const MIN_WIN_HEIGHT = 200;
+        const PADDING = 10;
+
+        const Icons = {
+            Note: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" className="fill-slate-100 stroke-slate-400" /><path d="M14 2v6h6" className="fill-slate-200 stroke-slate-400" /></svg>,
+            Folder: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>,
+            Maximize: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>,
+            Minimize: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/></svg>,
+            Restore: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="6" width="14" height="14" rx="2"/><path d="M6 9H4a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+            Close: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+            Theme: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>,
+            Arrange: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg>,
+            Trash: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+            MinAll: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 15h8"/><rect x="4" y="4" width="16" height="16" rx="2"/></svg>,
+            MaxAll: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8v8H8z"/></svg>,
+            CloseAll: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
+            ChevronDown: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6"/></svg>,
+            ArrowLeft: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>,
+            Pen: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>,
+            PdfFile: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+            ImageFile: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+            MediaFile: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>,
+            Zap: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Target: ({ className }) => (
+                <div style={{width: '18px', height:'18px', justifyContent: 'center', alignItems: 'center', display: 'flex'}}>
+                <svg className={className} style={{ transform: 'scale(1.9)'}} version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="currentColor">
+                    <g><g><g><g><path d="M20,26.5c-3.6,0-6.5-2.9-6.5-6.5s2.9-6.5,6.5-6.5s6.5,2.9,6.5,6.5S23.6,26.5,20,26.5z M20,14.5c-3,0-5.5,2.5-5.5,5.5s2.5,5.5,5.5,5.5s5.5-2.5,5.5-5.5S23,14.5,20,14.5z"/></g><g><g><path d="M20,16.5c-0.3,0-0.5-0.2-0.5-0.5v-4c0-0.3,0.2-0.5,0.5-0.5s0.5,0.2,0.5,0.5v4C20.5,16.3,20.3,16.5,20,16.5z"/></g><g><path d="M20,28.5c-0.3,0-0.5-0.2-0.5-0.5v-4c0-0.3,0.2-0.5,0.5-0.5s0.5,0.2,0.5,0.5v4C20.5,28.3,20.3,28.5,20,28.5z"/></g></g><g><g><path d="M28,20.5h-4c-0.3,0-0.5-0.2-0.5-0.5s0.2-0.5,0.5-0.5h4c0.3,0,0.5,0.2,0.5,0.5S28.3,20.5,28,20.5z"/></g><g><path d="M16,20.5h-4c-0.3,0-0.5-0.2-0.5-0.5s0.2-0.5,0.5-0.5h4c0.3,0,0.5,0.2,0.5,0.5S16.3,20.5,16,20.5z"/></g></g></g></g></g>
+                </svg>
+                </div>
+            )
+        };
+
+        // --- INTERNAL SYSTEM APPS ---
+        const PdfViewer = ({ data }) => {
+            return <iframe src={data.fileData} className="w-full h-full border-0 bg-slate-200 dark:bg-zinc-800" title="PDF Viewer" />
+        };
+
+        const ImageViewer = ({ data, onLaunch, title }) => {
+            const[scale, setScale] = useState(1);
+            const [pan, setPan] = useState({ x: 0, y: 0 });
+            const [isDragging, setIsDragging] = useState(false);
+            const[startPan, setStartPan] = useState({ x: 0, y: 0 });
+
+            const handleWheel = (e) => {
+                e.preventDefault();
+                const newScale = Math.max(0.1, Math.min(scale - e.deltaY * 0.005, 10));
+                setScale(newScale);
+            };
+
+            const handlePointerDown = (e) => {
+                setIsDragging(true);
+                e.target.setPointerCapture(e.pointerId);
+                setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+            };
+
+            const handlePointerMove = (e) => {
+                if (!isDragging) return;
+                setPan({ x: e.clientX - startPan.x, y: e.clientY - startPan.y });
+            };
+
+            const handlePointerUp = () => setIsDragging(false);
+
+            return (
+                <div className="relative w-full h-full overflow-hidden bg-slate-200 dark:bg-zinc-900" 
+                     onWheel={handleWheel} 
+                     onPointerDown={handlePointerDown} 
+                     onPointerMove={handlePointerMove} 
+                     onPointerUp={handlePointerUp}>
+                    
+                    <div className="absolute top-4 right-4 z-10" onPointerDown={e => e.stopPropagation()}>
+                        <button onClick={() => onLaunch('DrawIt', { bgImage: data.fileData, title: `Editing ${title}` })} 
+                                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                            <Icons.Pen className="w-3 h-3 sm:w-4 sm:h-4" /> Edit Image
+                        </button>
+                    </div>
+
+                    <div className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
+                         style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: isDragging ? 'none' : 'transform 0.1s ease-out' }}>
+                        <img src={data.fileData} alt={title} className="max-w-full max-h-full object-contain pointer-events-none drop-shadow-lg" draggable="false" />
+                    </div>
+                </div>
+            )
+        };
+
+        const MediaViewer = ({ data, onLaunch, title }) => {
+            const isVideo = data.isVideo === true;
+            return (
+                <div className="relative w-full h-full bg-slate-900 flex flex-col items-center justify-center overflow-hidden">
+                    <div className="absolute top-4 right-4 z-10" onPointerDown={e => e.stopPropagation()}>
+                        <button onClick={() => onLaunch('MediaEditor', { fileData: data.fileData, rawFile: data.rawFile, title: title, isVideo: isVideo })} 
+                                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                            <Icons.Pen className="w-3 h-3 sm:w-4 sm:h-4" /> Edit Media
+                        </button>
+                    </div>
+                    {isVideo ? (
+                        <video src={data.fileData} controls className="max-w-full max-h-full outline-none" />
+                    ) : (
+                        <audio src={data.fileData} controls className="outline-none w-11/12 max-w-md" />
+                    )}
+                </div>
+            )
+        };
+
+        const InternalApps = {
+            PdfViewer: PdfViewer,
+            ImageViewer: ImageViewer,
+            MediaViewer: MediaViewer
+        };
+
+        const AppIcon = ({ type, className }) => {
+            if (type === 'PdfViewer') return <Icons.PdfFile className={className} />;
+            if (type === 'ImageViewer') return <Icons.ImageFile className={className} />;
+            if (type === 'MediaViewer' || type === 'MediaEditor') return <Icons.MediaFile className={className} />;
+            
+            const appDef = window.AppRegistry?.find(a => a.id === type);
+            if (appDef && appDef.iconSvg) {
+                return (
+                    <div 
+                        dangerouslySetInnerHTML={{ __html: appDef.iconSvg }} 
+                        className={`flex items-center justify-center [&>svg]:w-full [&>svg]:h-full ${className}`}
+                    />
+                );
+            }
+            return <Icons.Note className={className} />; 
+        };
+
+        const WindowFrame = ({ node, isActive, isMaximized, isMagnetic, onInteract, onClose, onMin, onMax, onFocusMain, onDemote, onTitleChange, sidebarVisible, calculatedStyle, variant, disableAnim, children }) => {
+            const sidebarOffset = sidebarVisible ? SIDEBAR_COLLAPSED_W : 0; 
+            let finalStyle = {};
+            const magneticZ = 10; 
+
+            if (isMaximized) {
+                finalStyle = { position: 'absolute', left: sidebarOffset, top: 0, width: sidebarVisible ? `calc(100% - ${sidebarOffset}px)` : '100%', height: '100%', zIndex: 9999, display: node.isMinimized ? 'none' : 'flex' };
+            } else if (isMagnetic && calculatedStyle) {
+                finalStyle = { ...calculatedStyle.style, zIndex: magneticZ, display: node.isMinimized ? 'none' : 'flex' };
+            } else {
+                finalStyle = { 
+                    position: 'absolute',
+                    left: node.x, top: node.y, width: node.w, height: node.h, zIndex: node.z, display: node.isMinimized ? 'none' : 'flex',
+                    minWidth: MIN_WIN_WIDTH, minHeight: MIN_WIN_HEIGHT 
+                };
+            }
+            
+            const isMainLocation = variant === 'main';
+            const frameClasses = isMagnetic 
+                ? (isMainLocation 
+                    ? 'shadow-2xl ring-2 ring-blue-500/50 dark:ring-blue-500/40' 
+                    : 'shadow-lg opacity-95 hover:opacity-100 transition-opacity')
+                : (isActive ? 'shadow-2xl ring-1 ring-black/10 dark:ring-white/20' : 'shadow-lg opacity-90 grayscale-[0.1]');
+
+            const transitionClass = disableAnim ? '' : 'window-animate';
+
+            return (
+                <div className={`flex flex-col min-w-0 min-h-0 overflow-hidden rounded-xl border ${transitionClass} ${frameClasses} ${isMaximized ? 'rounded-none border-none' : ''} bg-white dark:bg-zinc-950 border-slate-200 dark:border-white/10`}
+                    style={finalStyle}
+                    onPointerDown={() => onInteract(node.id, 'focus')}>
+                    <div className={`h-7 sm:h-10 shrink-0 flex items-center px-2 sm:px-3 select-none backdrop-blur border-b ${isMainLocation && isMagnetic ? 'bg-blue-50/90 dark:bg-blue-950/40 border-blue-200 dark:border-blue-500/30' : 'bg-slate-50/80 dark:bg-zinc-900/80 border-slate-200 dark:border-white/10'}`}
+                        onPointerDown={!isMaximized && !isMagnetic ? (e) => onInteract(node.id, 'drag', e) : undefined} 
+                        style={{ cursor: isMaximized || isMagnetic ? 'default' : 'grab' }}>
+                        
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-slate-600 dark:text-zinc-300 pointer-events-none shrink min-w-[40px]">
+                            <AppIcon type={node.type} className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                            
+                            <input className="bg-transparent focus:bg-slate-200/50 dark:focus:bg-white/10 rounded px-1 focus:outline-none truncate text-[10px] sm:text-sm transition-colors shrink min-w-0 pointer-events-auto cursor-text" 
+                                style={{ width: `${Math.max((node.title || '').length, 3) + 2}ch`, maxWidth: '100%' }}
+                                value={node.title} 
+                                onChange={(e) => onTitleChange(node.id, e.target.value)} 
+                                onPointerDown={e => { e.stopPropagation(); onInteract(node.id, 'focus'); }} 
+                                onMouseDown={e => { e.stopPropagation(); onInteract(node.id, 'focus'); }} />
+                        </div>
+                        
+                        <div className="flex-1 min-w-[10px] h-full" /> 
+
+                        <div className="flex items-center gap-0.5 sm:gap-1.5 shrink-0" onPointerDown={e => e.stopPropagation()}>
+                            {isMagnetic && !isMaximized && (
+                                <>
+                                    {!isMainLocation && (
+                                        <button onClick={() => onFocusMain(node.id)} className="p-1 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-md text-blue-600 dark:text-blue-400 transition-colors" title="Focus (Promote to Main)"> <Icons.Target className="w-3.5 h-3.5 sm:w-5 sm:h-5" /> </button>
+                                    )}
+                                    <button onClick={() => onDemote(node.id)} className="p-1 sm:p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-md text-slate-500 dark:text-zinc-400 transition-colors" title="Demote to Stack"> <Icons.ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> </button>
+                                </>
+                            )}
+                            <button onClick={() => onMin(node.id)} className="p-1 sm:p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-md text-slate-500 dark:text-zinc-400 transition-colors"><Icons.Minimize className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></button>
+                            <button onClick={() => onMax(node.id)} className="p-1 sm:p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-md text-slate-500 dark:text-zinc-400 transition-colors">{isMaximized ? <Icons.Restore className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <Icons.Maximize className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}</button>
+                            <button onClick={() => onClose(node.id)} className="p-1 sm:p-1.5 hover:bg-red-500 hover:text-white rounded-md text-slate-500 dark:text-zinc-400 transition-colors"><Icons.Close className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></button>
+                        </div>
+                    </div>
+                    <div className="flex-1 relative overflow-hidden min-h-0 min-w-0">{children}</div>
+                    
+                    {!isMaximized && !isMagnetic && (
+                        <>
+                            <div className="resize-handle resize-n" onPointerDown={(e) => onInteract(node.id, 'resize-n', e)} />
+                            <div className="resize-handle resize-s" onPointerDown={(e) => onInteract(node.id, 'resize-s', e)} />
+                            <div className="resize-handle resize-e" onPointerDown={(e) => onInteract(node.id, 'resize-e', e)} />
+                            <div className="resize-handle resize-w" onPointerDown={(e) => onInteract(node.id, 'resize-w', e)} />
+                            <div className="resize-handle resize-ne" onPointerDown={(e) => onInteract(node.id, 'resize-ne', e)} />
+                            <div className="resize-handle resize-nw" onPointerDown={(e) => onInteract(node.id, 'resize-nw', e)} />
+                            <div className="resize-handle resize-se" onPointerDown={(e) => onInteract(node.id, 'resize-se', e)} />
+                            <div className="resize-handle resize-sw" onPointerDown={(e) => onInteract(node.id, 'resize-sw', e)} />
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        const Sidebar = ({ visible, setVisible, windows, onRestore, onClose, onCloseGroup }) => {
+            const [expandedGroup, setExpandedGroup] = useState(null);
+            const groups = useMemo(() => { 
+                const map = {}; 
+                windows.filter(w => w.isMinimized).forEach(w => { 
+                    if (!map[w.type]) map[w.type] =[]; 
+                    map[w.type].push(w); 
+                }); 
+                return map; 
+            }, [windows]);
+            
+            useEffect(() => { 
+                if (expandedGroup && (!groups[expandedGroup] || groups[expandedGroup].length === 0)) { 
+                    setExpandedGroup(null); 
+                } 
+            }, [groups, expandedGroup]);
+
+            useEffect(() => { 
+                if (visible && Object.keys(groups).length === 0) { 
+                    setVisible(false); 
+                } 
+            }, [groups, visible, setVisible]);
+            
+            const sidebarWidth = expandedGroup ? SIDEBAR_EXPANDED_W : SIDEBAR_COLLAPSED_W;
+            
+            return (
+                <>
+                    <div className={`fixed top-0 left-0 h-full bg-slate-100 dark:bg-zinc-950 transition-all duration-300 flex flex-col border-r border-slate-300 dark:border-white/10 shadow-xl ${visible ? 'translate-x-0' : '-translate-x-full'}`} style={{ width: visible ? sidebarWidth : 0, zIndex: 10000 }}>
+                        <div className="flex justify-center items-center w-full h-12 sm:h-14 border-b border-slate-200 dark:border-white/5 shrink-0 relative"> 
+                            {visible && ( 
+                                <button onClick={() => setVisible(false)} className="p-1.5 sm:p-2 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-colors text-slate-500 dark:text-zinc-400" title="Hide Sidebar"> 
+                                    <Icons.ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" /> 
+                                </button> 
+                            )} 
+                        </div>
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar w-full py-2 sm:py-4 flex flex-col items-center">
+                            <div className="flex flex-col gap-2 sm:gap-3 w-full items-center justify-center"> 
+                                {Object.entries(groups).map(([type, list]) => ( 
+                                    <div key={type} className={`flex flex-col items-center transition-all duration-300 ${expandedGroup === type ? 'w-[90%]' : 'w-auto'}`}> 
+                                        <div onClick={() => setExpandedGroup(expandedGroup === type ? null : type)} className={`cursor-pointer relative h-10 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-200 border shadow-sm group select-none ${expandedGroup === type ? 'bg-blue-50 dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-white/10 w-full justify-start px-2 sm:px-3 gap-2 sm:gap-3' : 'w-10 sm:w-12 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-600 dark:text-zinc-300 border-slate-200 dark:border-white/10'} `}> 
+                                            <div className="shrink-0"> 
+                                                <AppIcon type={type} className="w-5 h-5 sm:w-6 sm:h-6" /> 
+                                            </div> 
+                                            {expandedGroup === type && <span className="font-semibold text-xs sm:text-sm capitalize truncate flex-1 text-left">{type}</span>} 
+                                            {expandedGroup !== type && ( <div className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-4 sm:h-5 px-1 bg-red-500 text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm ring-2 ring-slate-100 dark:ring-zinc-900 z-10">{list.length}</div> )} 
+                                            {expandedGroup === type && ( 
+                                                <div className="flex items-center gap-1"> 
+                                                    <div role="button" onClick={(e) => { e.stopPropagation(); onCloseGroup(type); }} className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full hover:bg-red-200 dark:hover:bg-red-900 text-red-500 transition-colors" title="Close All"><Icons.Trash className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></div> 
+                                                    <div className="bg-blue-200 dark:bg-zinc-800 text-blue-800 dark:text-zinc-200 text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full min-w-[1.25rem] sm:min-w-[1.5rem] text-center">{list.length}</div> 
+                                                </div> 
+                                            )} 
+                                        </div> 
+                                        {expandedGroup === type && ( 
+                                            <div className="w-full flex flex-col gap-1 mt-2 animate-slide-up pl-2 sm:pl-4 border-l-2 border-slate-200 dark:border-white/10 ml-2 sm:ml-4"> 
+                                                {list.map(w => ( 
+                                                    <div key={w.id} className="w-full flex items-center justify-between bg-white dark:bg-zinc-900 rounded-lg p-1.5 sm:p-2 shadow-sm border border-slate-100 dark:border-white/5 hover:border-blue-300 dark:hover:border-white/20 transition-colors"> 
+                                                        <button onClick={() => onRestore(w.id)} className="text-[10px] sm:text-xs font-medium text-slate-700 dark:text-zinc-300 truncate flex-1 text-left hover:text-blue-500 dark:hover:text-blue-400" title={w.title}>{w.title || 'Untitled'}</button> 
+                                                        <button onClick={() => onClose(w.id)} className="text-slate-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 p-0.5 sm:p-1 opacity-100 transition-opacity">×</button> 
+                                                    </div> 
+                                                ))} 
+                                            </div> 
+                                        )} 
+                                    </div> 
+                                ))} 
+                            </div>
+                        </div>
+                    </div>
+                    {!visible && Object.keys(groups).length > 0 && ( 
+                        <div className="fixed left-0 top-0 bottom-0 w-4 hover:w-8 sm:hover:w-10 transition-all flex items-center justify-center group bg-transparent hover:bg-slate-200/50 dark:hover:bg-white/5 cursor-pointer" style={{ zIndex: 9999 }} onClick={() => setVisible(true)}> 
+                            <div className="w-1 sm:w-1.5 h-12 sm:h-16 bg-slate-300 dark:bg-zinc-600 rounded-full group-hover:bg-blue-500 dark:group-hover:bg-blue-400 transition-colors shadow-sm" /> 
+                        </div> 
+                    )}
+                </>
+            );
+        };
+
+        const DockItem = ({ children, label, onClick, active }) => ( <button onClick={onClick} className={`group relative w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center hover:bg-white dark:hover:bg-white/10 hover:shadow-lg transition-all duration-200 active:scale-95 flex-shrink-0 ${active ? 'bg-white dark:bg-white/10 shadow-md ring-2 ring-blue-400 dark:ring-blue-500' : ''}`}> <div className="transition-transform group-hover:scale-110">{children}</div> <span className="absolute -top-8 sm:-top-10 bg-slate-900 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[1000]">{label}</span> </button> );
+
+        // Live RAM Monitor Component
+        const RamMonitor = ({ onClear }) => {
+            const [mem, setMem] = useState(0);
+            
+            useEffect(() => {
+                if(!performance.memory) return;
+                const int = setInterval(() => setMem(Math.round(performance.memory.usedJSHeapSize / 1048576)), 1000);
+                return () => clearInterval(int);
+            },[]);
+
+            if(!performance.memory) return null;
+
+            return (
+                <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-200 dark:bg-zinc-900 px-1.5 py-1 sm:px-2 rounded-lg border border-slate-300 dark:border-zinc-800 shadow-inner">
+                    <div className="flex items-center gap-1">
+                        <Icons.Zap className="w-3 h-3 text-amber-500" />
+                        <span className="text-[9px] sm:text-xs font-mono font-semibold text-slate-700 dark:text-zinc-300 min-w-[3ch]">{mem}MB</span>
+                    </div>
+                    <button onClick={onClear} className="text-[9px] sm:text-xs font-bold bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white text-slate-600 dark:text-zinc-400 px-1.5 sm:px-2 py-0.5 rounded shadow-sm transition-all" title="Clear unused memory & caches">
+                        Clear
+                    </button>
+                </div>
+            )
+        };
+
+        const Dock = ({ onLaunch, onOpenFile, onTheme, isDark, onArrange, onMinAll, onMaxAll, onCloseAll, isVisible, toggleVisible, isMagnetic, toggleMagnetic, onClearMemory }) => (
+            <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center w-full max-w-5xl pointer-events-none transition-all duration-300 ${isVisible ? 'translate-y-0 mb-2 sm:mb-4' : 'translate-y-full mb-0'}`}>
+                <div className="pointer-events-auto absolute -top-8 sm:-top-10 left-1/2 -translate-x-1/2 w-full flex justify-center"> {!isVisible && ( <div className="h-4 sm:h-6 w-32 sm:w-48 hover:h-8 sm:hover:h-12 transition-all flex items-center justify-center group cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/5 rounded-t-xl" onClick={toggleVisible}> <div className="w-12 sm:w-16 h-1 sm:h-1.5 bg-slate-300 dark:bg-zinc-600 rounded-full group-hover:bg-blue-500 dark:group-hover:bg-blue-400 transition-colors shadow-sm" /> </div> )} </div>
+                <div className="glass-panel bg-white/70 dark:bg-zinc-950/80 px-2 py-2 sm:px-4 sm:py-3 rounded-2xl sm:rounded-3xl shadow-2xl flex items-center gap-1.5 sm:gap-4 pointer-events-auto overflow-x-auto no-scrollbar max-w-[95vw] border-slate-200/50 dark:border-white/10">
+                    <div className="flex items-center gap-1 sm:gap-1.5">                         
+                        {window.AppRegistry && window.AppRegistry.filter(app => !app.hidden).map(app => (
+                            <DockItem key={app.id} label={app.name} onClick={() => onLaunch(app.id)}>
+                                <div 
+                                    dangerouslySetInnerHTML={{ __html: app.iconSvg }} 
+                                    className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center [&>svg]:w-full[&>svg]:h-full text-slate-700 dark:text-zinc-300"
+                                />
+                            </DockItem>
+                        ))}
+
+                        <DockItem label="Open File" onClick={onOpenFile}><Icons.Folder className="w-5 h-5 sm:w-6 sm:h-6" /></DockItem> 
+                    </div>
+                    <div className="w-px h-6 sm:h-8 bg-slate-300 dark:bg-white/10 mx-0.5 sm:mx-1 flex-shrink-0" />
+                    <div className="flex items-center gap-1 sm:gap-1.5"> <DockItem label="Restore All" onClick={onMaxAll}><Icons.MaxAll className="w-4 h-4 sm:w-5 sm:h-5" /></DockItem> <DockItem label="Minimize All" onClick={onMinAll}><Icons.MinAll className="w-4 h-4 sm:w-5 sm:h-5" /></DockItem> <DockItem label="Close All" onClick={onCloseAll}><Icons.CloseAll className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" /></DockItem> </div>
+                    <div className="w-px h-6 sm:h-8 bg-slate-300 dark:bg-white/10 mx-0.5 sm:mx-1 flex-shrink-0" />
+                    <div className="flex items-center gap-1 sm:gap-1.5"> 
+                         <div className="flex bg-slate-200 dark:bg-zinc-900 p-1 rounded-lg sm:rounded-xl shadow-inner items-center h-8 sm:h-10 shrink-0 border dark:border-white/5">
+                              <button onClick={() => toggleMagnetic(false)} className={`h-full px-2 sm:px-3 text-[10px] sm:text-xs font-bold rounded-md sm:rounded-lg transition-all flex items-center justify-center ${!isMagnetic ? 'bg-white dark:bg-zinc-700 shadow-sm text-slate-900 dark:text-zinc-100' : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'}`}>Float</button>
+                              <button onClick={() => toggleMagnetic(true)} className={`h-full px-2 sm:px-3 text-[10px] sm:text-xs font-bold rounded-md sm:rounded-lg transition-all flex items-center justify-center ${isMagnetic ? 'bg-white dark:bg-zinc-700 shadow-sm text-blue-500 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'}`}>Split</button>
+                         </div>
+                         <DockItem label="Arrange" onClick={onArrange}><Icons.Arrange className="w-4 h-4 sm:w-5 sm:h-5" /></DockItem> 
+                         <DockItem label={isDark ? "Light Mode" : "Dark Mode"} onClick={onTheme}><Icons.Theme className="w-4 h-4 sm:w-5 sm:h-5" /></DockItem> 
+                         <button onClick={toggleVisible} className="group relative w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center hover:bg-slate-200 dark:hover:bg-white/10 hover:shadow-lg transition-all flex-shrink-0"> <Icons.ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500 dark:text-zinc-400" /> <span className="absolute -top-8 sm:-top-10 bg-slate-900 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Hide</span> </button> 
+                    </div>
+                    <div className="w-px h-6 sm:h-8 bg-slate-300 dark:bg-white/10 mx-0.5 sm:mx-1 flex-shrink-0" />
+                    <RamMonitor onClear={onClearMemory} />
+                </div>
+            </div>
+        );
+
+        const App = () => {
+            const[windows, setWindows] = useState([]);
+            const [externalApps, setExternalApps] = useState({}); 
+            const[activeGridIds, setActiveGridIds] = useState([]); 
+            const[activeId, setActiveId] = useState(null);
+            const [maximizedId, setMaximizedId] = useState(null);
+            const[drag, setDrag] = useState(null);
+            const [isDark, setIsDark] = useState(false);
+            const [isDockVisible, setIsDockVisible] = useState(true);
+            const[isSidebarVisible, setIsSidebarVisible] = useState(false);
+            const[isMagnetic, setIsMagnetic] = useState(false);
+            const [gridSplit, setGridSplit] = useState(0.7);
+            const[sideSplit, setSideSplit] = useState(0.5);
+            const[viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
+            const stackRef = useRef(null);
+            const fileInputRef = useRef(null);
+            const[toastMessage, setToastMessage] = useState('');
+            
+            const [showDotWave, setShowDotWave] = useState(false);
+            const[isAppIntro, setIsAppIntro] = useState(true);
+            const prevWinCount = useRef(0);
+
+            // OPTIMIZATION: "objectUrl" prevents heavy ArrayBuffer caching in React
+            const fileAssociations = useMemo(() => ({
+                'txt': { app: 'Note', readAs: 'text' },
+                'md': { app: 'MdEditor', readAs: 'text' },
+                'docx': { app: 'WordEditor', readAs: 'dataUrl' },
+                'json': { app: 'Boards', readAs: 'text' },
+                'png': { app: 'ImageViewer', readAs: 'objectUrl' },
+                'jpg': { app: 'ImageViewer', readAs: 'objectUrl' },
+                'jpeg': { app: 'ImageViewer', readAs: 'objectUrl' },
+                'pdf': { app: 'PdfViewer', readAs: 'objectUrl' },
+                'mp3': { app: 'MediaViewer', readAs: 'objectUrl' },
+                'wav': { app: 'MediaViewer', readAs: 'objectUrl' },
+                'ogg': { app: 'MediaViewer', readAs: 'objectUrl' }
+                // 'mp4': { app: 'MediaViewer', readAs: 'objectUrl' },
+                // 'webm': { app: 'MediaViewer', readAs: 'objectUrl' },
+                // 'mov': { app: 'MediaViewer', readAs: 'objectUrl' },
+                // 'mkv': { app: 'MediaViewer', readAs: 'objectUrl' }
+            }),[]);
+
+            useEffect(() => { if (isDark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); }, [isDark]);
+            useEffect(() => { const handleResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight }); window.addEventListener('resize', handleResize); return () => window.removeEventListener('resize', handleResize); },[]);
+            
+            useEffect(() => {
+                const loadExternalApps = async () => {
+                    const loadedApps = {};
+                    if (!window.AppRegistry) return;
+                    
+                    for (const appDef of window.AppRegistry) {
+                        await new Promise((resolve) => {
+                            const script = document.createElement('script');
+                            script.src = appDef.scriptPath;
+                            script.onload = () => {
+                                try {
+                                    const rawJSX = window.CanvasApps[appDef.id];
+                                    const wrappedJSX = `function CanvasAppWrapper() {\n${rawJSX}\n}`;
+                                    const compiled = Babel.transform(wrappedJSX, { presets: ['react'] }).code;
+                                    const AppFactory = new Function('React', compiled + "\nreturn CanvasAppWrapper();");
+                                    loadedApps[appDef.id] = AppFactory(React);
+                                    resolve();
+                                } catch (e) {
+                                    console.error("Failed to compile:", appDef.id, e);
+                                    resolve();
+                                }
+                            };
+                            script.onerror = resolve;
+                            document.head.appendChild(script);
+                        });
+                    }
+                    setExternalApps(loadedApps);
+                };
+                loadExternalApps();
+            },[]);
+
+            useEffect(() => {
+                const timer = setTimeout(() => setIsAppIntro(false), 1500);
+                return () => clearTimeout(timer);
+            },[]);
+
+            const showBranding = windows.length === 0;
+
+            useEffect(() => {
+                if (prevWinCount.current === 0 && windows.length > 0) {
+                    setShowDotWave(true);
+                    setTimeout(() => setShowDotWave(false), 1200); 
+                }
+                prevWinCount.current = windows.length;
+                setActiveGridIds(prev => prev.filter(id => windows.some(w => w.id === id && !w.isMinimized)));
+            },[windows]);
+
+            const stackWindows = useMemo(() => windows.filter(w => !w.isMinimized && !activeGridIds.includes(w.id)),[windows, activeGridIds]);
+            const hasStack = stackWindows.length > 0;
+            
+            const isSm = viewport.w >= 640;
+            const isMobile = viewport.w <= 760;
+            const isMobileLandscape = viewport.h < 500 && viewport.w > viewport.h;
+            
+            const useCompactStack = !isSm || isMobileLandscape;
+            const stackThickness = useCompactStack ? 80 : 100;
+            const dockThickness = useCompactStack ? 75 : 95;
+
+            const getDockHeight = useCallback(() => isDockVisible ? dockThickness : 0,[isDockVisible, dockThickness]);
+            const getStackHeight = useCallback(() => hasStack ? stackThickness : 0,[hasStack, stackThickness]);
+            const getSidebarW = useCallback(() => isSidebarVisible ? SIDEBAR_COLLAPSED_W : 0, [isSidebarVisible]);
+            
+            const calculateGridStyles = () => {
+                if (!isMagnetic) return {};
+                const styles = {};
+                
+                const visibleIds = activeGridIds.filter(id => windows.some(w => w.id === id && !w.isMinimized));
+                if (visibleIds.length === 0) return styles;
+
+                const isMobilePortrait = isMobile && viewport.h > viewport.w;
+
+                visibleIds.forEach((id, idx) => {
+                    let style = { position: 'relative', flex: '0 0 auto', order: idx };
+                    let variant = 'main';
+
+                    if (visibleIds.length === 1) {
+                        style.width = '100%'; style.height = '100%';
+                    } else if (visibleIds.length === 2) {
+                        if (isMobilePortrait) {
+                            style.width = '100%';
+                            style.height = idx === 0 ? `calc(${gridSplit * 100}% - ${PADDING / 2}px)` : `calc(${(1 - gridSplit) * 100}% - ${PADDING / 2}px)`;
+                            if (idx === 1) variant = 'side';
+                        } else {
+                            style.height = '100%';
+                            style.width = idx === 0 ? `calc(${gridSplit * 100}% - ${PADDING / 2}px)` : `calc(${(1 - gridSplit) * 100}% - ${PADDING / 2}px)`;
+                            if (idx === 1) variant = 'side';
+                        }
+                    } else if (visibleIds.length >= 3) {
+                        if (idx === 0) {
+                            style.height = '100%'; 
+                            style.width = `calc(${gridSplit * 100}% - ${PADDING / 2}px)`;
+                        } else if (idx === 1) {
+                            style.height = `calc(${sideSplit * 100}% - ${PADDING / 2}px)`; 
+                            style.width = `calc(${(1 - gridSplit) * 100}% - ${PADDING / 2}px)`; 
+                            variant = 'side';
+                        } else if (idx === 2) {
+                            style.height = `calc(${(1 - sideSplit) * 100}% - ${PADDING / 2}px)`; 
+                            style.width = `calc(${(1 - gridSplit) * 100}% - ${PADDING / 2}px)`; 
+                            variant = 'side';
+                        }
+                    }
+                    styles[id] = { style, variant };
+                });
+                return styles;
+            };
+
+            const gridStyles = useMemo(() => calculateGridStyles(),[windows, activeGridIds, isMagnetic, gridSplit, sideSplit, viewport, isSidebarVisible, isDockVisible, hasStack]);
+
+            const addWindow = (type, initialData = {}) => {
+                const id = Math.random().toString(36).substr(2, 9);
+                
+                let w = isMobile ? Math.min(320, viewport.w * 0.9) : 400; 
+                let h = isMobile ? Math.min(300, viewport.h * 0.6) : 350;
+                let x = Math.max(0, (viewport.w - w) / 2); 
+                let y = Math.max(0, (viewport.h - h) / 2);
+
+                if (!isMagnetic) {
+                    let offsetCount = 0;
+                    while (windows.some(win => !win.isMinimized && Math.abs(win.x - x) < 20 && Math.abs(win.y - y) < 20) && offsetCount < 10) {
+                        x += 30; y += 30; if (x + w > viewport.w - 20 || y + h > viewport.h - 20) { x = 40; y = 40; } offsetCount++;
+                    }
+                }
+
+                const appDef = window.AppRegistry?.find(a => a.id === type);
+                let title = initialData.title || (appDef ? appDef.name : type);
+                let data = { ...initialData };
+                
+                const newWin = { id, type, title, x, y, w, h, z: getNextZ(), isMinimized: false, data: data };
+                setWindows(prev => [...prev, newWin]);
+                
+                const capacity = isMobile ? 2 : 3;
+                setActiveGridIds(prev => [id, ...prev].slice(0, capacity));
+                setActiveId(id); 
+                setMaximizedId(null);
+            };
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                const mapping = fileAssociations[ext];
+
+                if (!mapping) {
+                    setToastMessage(`Unsupported file type: .${ext}`);
+                    setTimeout(() => setToastMessage(''), 3500);
+                    e.target.value = ''; 
+                    return;
+                }
+
+                // LIGHTNING FAST MEMORY FIX:
+                if (mapping.readAs === 'objectUrl') {
+                    const url = URL.createObjectURL(file);
+                    const isVideo =['mp4', 'webm', 'mov', 'mkv'].includes(ext);
+                    addWindow(mapping.app, { title: file.name, fileData: url, rawFile: file, isVideo: isVideo });
+                    e.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const content = event.target.result;
+                    addWindow(mapping.app, { title: file.name, content: content, fileData: content });
+                };
+                
+                if (mapping.readAs === 'text') {
+                    reader.readAsText(file);
+                } else {
+                    reader.readAsDataURL(file); 
+                }
+                
+                e.target.value = ''; 
+            };
+
+            // REVOKE BLOBS TO FREE MEMORY
+            const revokeIfBlob = (w) => {
+                if (w.data?.fileData?.startsWith('blob:')) {
+                    URL.revokeObjectURL(w.data.fileData);
+                }
+            };
+
+            const handleClearMemory = () => {
+                // Terminate all minimized apps and flush their large blob URLs from memory
+                windows.forEach(w => {
+                    if (w.isMinimized) revokeIfBlob(w);
+                });
+                setWindows(prev => prev.filter(w => !w.isMinimized));
+                setActiveGridIds(prev => prev.filter(id => !windows.find(w => w.id === id)?.isMinimized));
+                setMaximizedId(null);
+                
+                setToastMessage('Memory Optimized: Background apps closed and caches flushed.');
+                setTimeout(() => setToastMessage(''), 3000);
+            };
+
+            const updateTitle = (id, newTitle) => { setWindows(prev => prev.map(w => w.id === id ? { ...w, title: newTitle } : w)); };
+            const getNextZ = () => (windows.length > 0 ? Math.max(0, ...windows.map(w => w.z)) + 1 : 1);
+            
+            const focusWindow = (id) => { 
+                setActiveId(id); 
+                setWindows(prev => prev.map(w => w.id === id ? { ...w, z: getNextZ(), isMinimized: false } : w)); 
+            };
+
+            const focusMain = (id) => {
+                focusWindow(id);
+                const capacity = isMobile ? 2 : 3;
+                setActiveGridIds(prev =>[id, ...prev.filter(pid => pid !== id)].slice(0, capacity));
+            };
+
+            const demoteWindow = (id) => setActiveGridIds(prev => prev.filter(pid => pid !== id));
+            
+            const closeWindow = (id) => { 
+                const win = windows.find(w => w.id === id);
+                if (win) revokeIfBlob(win);
+                setWindows(prev => prev.filter(w => w.id !== id)); 
+                setActiveGridIds(prev => prev.filter(pid => pid !== id));
+                if (activeId === id) setActiveId(null); 
+            };
+
+            const closeGroup = (type) => { 
+                const toClose = windows.filter(w => w.isMinimized && w.type === type);
+                toClose.forEach(revokeIfBlob);
+                const toCloseIds = toClose.map(w => w.id);
+                setWindows(prev => prev.filter(w => !toCloseIds.includes(w.id))); 
+                setActiveGridIds(prev => prev.filter(pid => !toCloseIds.includes(pid)));
+            };
+
+            const toggleMinimize = (id) => { 
+                setWindows(prev => prev.map(w => w.id === id ? { ...w, isMinimized: !w.isMinimized } : w)); 
+                setActiveGridIds(prev => prev.filter(pid => pid !== id));
+                if (activeId === id) setActiveId(null); 
+            };
+
+            const restoreWindow = (id) => {
+                focusWindow(id);
+                const capacity = isMobile ? 2 : 3;
+                setActiveGridIds(prev => prev.includes(id) ? prev : [id, ...prev].slice(0, capacity));
+            };
+
+            const toggleMaximize = (id) => { setMaximizedId(maximizedId === id ? null : id); focusWindow(id); };
+            const minimizeAll = () => { setWindows(prev => prev.map(w => ({ ...w, isMinimized: true }))); setActiveGridIds([]); setMaximizedId(null); setActiveId(null); };
+            const maximizeAll = () => { setWindows(prev => prev.map(w => ({ ...w, isMinimized: false }))); };
+            const closeAll = () => { 
+                windows.forEach(revokeIfBlob);
+                setWindows([]); setActiveGridIds([]); setActiveId(null); setMaximizedId(null); 
+            };
+            
+            const arrangeWindows = () => { 
+                setIsMagnetic(false); 
+                setActiveGridIds([]); 
+                const visible = windows.filter(w => !w.isMinimized); 
+                if (!visible.length) return; 
+                
+                const gap = isMobile ? 10 : 20; 
+                const sideOffset = getSidebarW(); 
+                const containerW = viewport.w - sideOffset; 
+                const containerH = viewport.h - getDockHeight(); 
+                
+                const minCardW = isMobile ? 160 : 350;
+                let cols = Math.floor((containerW - gap) / (minCardW + gap)) || 1; 
+                if (cols > visible.length) cols = visible.length; 
+                
+                const rows = Math.ceil(visible.length / cols); 
+                const cardW = (containerW - (gap * (cols + 1))) / cols; 
+                const cardH = (containerH - (gap * (rows + 1))) / rows; 
+                
+                setWindows(prev => { 
+                    const sorted = [...prev].sort((a,b) => a.z - b.z); 
+                    let visIdx = 0; 
+                    return sorted.map(w => { 
+                        if (w.isMinimized) return w; 
+                        const col = visIdx % cols; const row = Math.floor(visIdx / cols); visIdx++; 
+                        return { ...w, x: sideOffset + gap + col * (cardW + gap), y: gap + row * (cardH + gap), w: cardW, h: cardH }; 
+                    }); 
+                }); 
+                setMaximizedId(null); 
+            };
+            
+            const toggleMagnetic = (forceValue) => {
+                const nextVal = typeof forceValue === 'boolean' ? forceValue : !isMagnetic;
+                if (nextVal === isMagnetic) return;
+                if (nextVal) {
+                    const visible = windows.filter(w => !w.isMinimized).sort((a, b) => b.z - a.z);
+                    const capacity = isMobile ? 2 : 3;
+                    setActiveGridIds(visible.slice(0, capacity).map(w => w.id));
+                }
+                setIsMagnetic(nextVal);
+            };
+
+            const updateData = (id, data) => { setWindows(prev => prev.map(w => w.id === id ? { ...w, data: { ...w.data, ...data } } : w)); };
+            
+            const onInteract = (id, action, e) => {
+                if (action === 'focus') {
+                    focusWindow(id);
+                } else if ((action.startsWith('resize') || action === 'drag')) {
+                    if (action.startsWith('resize') && isMagnetic) {
+                        setDrag({ type: action, id, startX: e.clientX, startY: e.clientY });
+                        e.target.setPointerCapture(e.pointerId);
+                        return;
+                    }
+                    if (isMagnetic && !action.startsWith('resize')) return; 
+                    
+                    const w = windows.find(win => win.id === id); if (!w) return;
+                    e.target.setPointerCapture(e.pointerId);
+                    setDrag({ type: action, id, startX: e.clientX, startY: e.clientY, initX: w.x, initY: w.y, initW: w.w, initH: w.h });
+                }
+            };
+
+            const flexBounds = useMemo(() => {
+                const pl = getSidebarW() + PADDING;
+                const pr = isMobileLandscape ? (getStackHeight() + (PADDING * 2)) : PADDING;
+                const pt = PADDING;
+                const pb = isMobileLandscape ? PADDING : (getStackHeight() + getDockHeight() + (PADDING * 2));
+                return { pl, pr, pt, pb, contentW: viewport.w - pl - pr, contentH: viewport.h - pt - pb };
+            },[viewport, isSidebarVisible, isDockVisible, hasStack, isMobileLandscape, getStackHeight, getDockHeight, getSidebarW]);
+
+            const onPointerMove = (e) => {
+                if (!drag) return;
+                const dx = e.clientX - drag.startX;
+                const dy = e.clientY - drag.startY;
+
+                if (drag.type === 'resize-split-v') {
+                     const { pl, contentW, pt, contentH } = flexBounds;
+                     const rawX = e.clientX - pl; 
+                     
+                     const minRatio = (MIN_WIN_WIDTH + PADDING / 2) / contentW;
+                     const maxRatio = 1 - minRatio;
+                     let newRatio = rawX / contentW;
+                     
+                     if (minRatio < maxRatio) newRatio = Math.max(minRatio, Math.min(maxRatio, newRatio));
+                     else newRatio = 0.5; 
+                     
+                     if (isMobile && !isMobileLandscape && activeGridIds.length === 2) {
+                         const rawY = e.clientY - pt;
+                         const minHRatio = (MIN_WIN_HEIGHT + PADDING / 2) / contentH;
+                         let newHRatio = rawY / contentH;
+                         if (minHRatio < (1 - minHRatio)) newHRatio = Math.max(minHRatio, Math.min(1 - minHRatio, newHRatio));
+                         else newHRatio = 0.5;
+                         
+                         setGridSplit(newHRatio);
+                     } else {
+                         setGridSplit(newRatio);
+                     }
+                     return;
+                }
+                
+                if (drag.type === 'resize-split-h') {
+                    const { pt, contentH } = flexBounds;
+                    const rawY = e.clientY - pt;
+                    
+                    const minRatio = (MIN_WIN_HEIGHT + PADDING / 2) / contentH;
+                    const maxRatio = 1 - minRatio;
+                    let newRatio = rawY / contentH;
+                    
+                    if (minRatio < maxRatio) newRatio = Math.max(minRatio, Math.min(maxRatio, newRatio));
+                    else newRatio = 0.5;
+                    
+                    setSideSplit(newRatio);
+                    return;
+                }
+
+                setWindows(prev => prev.map(w => {
+                    if (w.id !== drag.id) return w;
+                    if (drag.type === 'drag') return { ...w, x: drag.initX + dx, y: drag.initY + dy };
+                    let newW = w.w; let newH = w.h; let newX = w.x; let newY = w.y;
+                    if (drag.type.includes('e')) newW = Math.max(MIN_WIN_WIDTH, drag.initW + dx);
+                    if (drag.type.includes('s')) newH = Math.max(MIN_WIN_HEIGHT, drag.initH + dy);
+                    if (drag.type.includes('w')) { const maxDelta = drag.initW - MIN_WIN_WIDTH; const validDx = Math.min(dx, maxDelta); newW = drag.initW - validDx; newX = drag.initX + validDx; }
+                    if (drag.type.includes('n')) { const maxDelta = drag.initH - MIN_WIN_HEIGHT; const validDy = Math.min(dy, maxDelta); newH = drag.initH - validDy; newY = drag.initY + validDy; }
+                    return { ...w, x: newX, y: newY, w: newW, h: newH };
+                }));
+            };
+            
+            const onPointerUp = () => setDrag(null);
+
+            const renderGridGaps = () => {
+                if (!isMagnetic) return null;
+                const visibleCount = activeGridIds.length;
+                if (visibleCount < 2) return null;
+
+                const { pl, pt, contentW, contentH } = flexBounds;
+                const isMobilePortrait = isMobile && !isMobileLandscape;
+                const elements =[];
+
+                if (isMobilePortrait && visibleCount === 2) {
+                    const splitY = pt + (contentH * gridSplit);
+                    elements.push(<div key="split-v-mobile" className="resize-gap-h" style={{ left: pl, width: contentW, top: splitY }} onPointerDown={(e) => onInteract('gap', 'resize-split-v', e)} />);
+                    return elements;
+                }
+
+                const splitX = pl + (contentW * gridSplit);
+                elements.push(<div key="split-v" className="resize-gap-v" style={{ left: splitX, top: pt, height: contentH }} onPointerDown={(e) => onInteract('gap', 'resize-split-v', e)} />);
+
+                if (visibleCount >= 3) {
+                    const sideW = contentW * (1 - gridSplit);
+                    const splitY = pt + (contentH * sideSplit);
+                    elements.push(<div key="split-h" className="resize-gap-h" style={{ left: splitX + (PADDING/2), width: sideW - (PADDING/2), top: splitY }} onPointerDown={(e) => onInteract('gap', 'resize-split-h', e)} />);
+                }
+                return elements;
+            };
+
+            const stackStyle = isMobileLandscape ? {
+                right: '10px', top: '10px', bottom: isDockVisible ? `${getDockHeight() + PADDING}px` : `${PADDING}px`, width: `${stackThickness}px`,
+                display: 'flex', flexDirection: 'column', zIndex: 50, pointerEvents: 'auto'
+            } : {
+                bottom: isDockVisible ? `${getDockHeight() + PADDING}px` : `${PADDING}px`,
+                left: isSidebarVisible ? `${SIDEBAR_COLLAPSED_W + PADDING}px` : `${PADDING}px`,
+                right: `${PADDING}px`, display: 'flex', flexDirection: 'row', height: `${stackThickness}px`,
+                zIndex: 50, pointerEvents: 'auto'
+            };
+
+            const handleStackWheel = (e) => {
+                if (stackRef.current && !isMobileLandscape) {
+                    stackRef.current.scrollLeft += e.deltaY;
+                }
+            };
+
+            const flexContainerStyle = isMagnetic ? {
+                display: 'flex',
+                flexDirection: 'column',
+                flexWrap: 'wrap',
+                gap: `${PADDING}px`,
+                paddingTop: flexBounds.pt,
+                paddingBottom: flexBounds.pb,
+                paddingLeft: flexBounds.pl,
+                paddingRight: flexBounds.pr,
+                alignContent: 'flex-start',
+            } : {};
+
+            return (
+                <div className="w-full h-screen relative overflow-hidden flex flex-col" onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+                    
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        onChange={handleFileUpload} 
+                        accept={Object.keys(fileAssociations).map(ext => `.${ext}`).join(',')} 
+                    />
+
+                    {toastMessage && (
+                        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10000] bg-slate-900/90 dark:bg-slate-100/90 backdrop-blur text-slate-100 dark:text-slate-900 px-6 py-3 rounded-full shadow-2xl transition-all animate-pop border border-slate-700 dark:border-slate-300 font-semibold text-sm">
+                            {toastMessage}
+                        </div>
+                    )}
+                    
+                    {!showBranding && (
+                        <div className={`absolute -inset-[5%] bg-dot-pattern pointer-events-none z-0 transition-opacity duration-1000 opacity-100 ${showDotWave ? 'animate-dot-warp' : ''}`} />
+                    )}
+
+                    {showBranding && ( 
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"> 
+                            <div className={`text-center ${isAppIntro ? 'animate-brand-reveal' : 'animate-pulse-slow'}`}> 
+                                <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-300 dark:text-zinc-800 tracking-tight drop-shadow-sm">CanvasOS</h1> 
+                                <p className="text-slate-400 dark:text-zinc-600 mt-2 sm:mt-4 text-base sm:text-lg font-medium tracking-wide">Your Infinite Workspace</p> 
+                            </div> 
+                        </div> 
+                    )}
+                    
+                    <div className="flex-1 relative w-full h-full" style={flexContainerStyle}>
+                        {renderGridGaps()}
+                        
+                        {isMagnetic && hasStack && (
+                            <div id="stack-container-wrapper" className="absolute transition-all duration-300" style={stackStyle}>
+                                <div className={`shrink-0 flex items-center justify-center bg-white/90 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl border border-slate-200/80 dark:border-white/10 shadow-sm z-20 self-center ${isMobileLandscape ? 'flex-row gap-1 px-2 py-1 mb-2' : 'flex-col gap-1 py-1.5 px-1.5 mr-1'}`}>
+                                    <button onClick={() => { setWindows(prev => prev.map(w => stackWindows.some(sw => sw.id === w.id) ? { ...w, isMinimized: true } : w)); }} className="p-1.5 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-all" title="Minimize Stack"><Icons.Minimize className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>
+                                    <div className={`bg-slate-200 dark:bg-white/10 ${isMobileLandscape ? 'w-px h-4' : 'h-px w-4'}`} />
+                                    <button onClick={() => { setWindows(prev => prev.filter(w => !stackWindows.some(sw => sw.id === w.id))); }} className="p-1.5 text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all" title="Close Stack"><Icons.Close className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>
+                                </div>
+                                <div id="stack-container" ref={stackRef} onWheel={handleStackWheel} className={`flex-1 flex overflow-auto no-scrollbar gap-2 px-1 ${isMobileLandscape ? 'flex-col pb-1 min-h-0' : 'flex-row items-center pb-0 min-w-0'}`}>
+                                    {stackWindows.map(w => (
+                                         <div key={`stack-${w.id}`} className={`flex-shrink-0 flex flex-col p-1 sm:p-2 rounded-xl bg-white dark:bg-zinc-900 shadow-md border border-slate-200 dark:border-white/10 hover:bg-blue-50 dark:hover:bg-white/5 cursor-pointer transition-all active:scale-95 snap-center relative justify-between overflow-hidden ${useCompactStack ? 'w-14 h-14' : 'w-20 h-20'}`} onClick={() => focusMain(w.id)}>
+                                              <div className="flex items-center justify-center pt-1 text-slate-500 dark:text-zinc-400 pointer-events-none">
+                                                  <AppIcon type={w.type} className={useCompactStack ? 'w-4 h-4' : 'w-6 h-6'} />
+                                              </div>
+                                              <span className="text-[8px] sm:text-[10px] font-semibold text-slate-700 dark:text-zinc-200 truncate w-full text-center pointer-events-none px-1">{w.title}</span>
+                                              <div className="absolute top-1 right-1 flex flex-col gap-0.5 sm:gap-1 z-10 opacity-100">
+                                                  <button onClick={(e) => { e.stopPropagation(); closeWindow(w.id); }} className="p-0.5 bg-red-500/80 hover:bg-red-500 text-white rounded-full shadow-sm backdrop-blur-sm transition-colors"><Icons.Close className="w-2 h-2 sm:w-2.5 sm:h-2.5" /></button>
+                                                  <button onClick={(e) => { e.stopPropagation(); toggleMinimize(w.id); }} className="p-0.5 bg-slate-500/80 hover:bg-slate-600 dark:bg-zinc-700/80 dark:hover:bg-zinc-600 text-white rounded-full shadow-sm backdrop-blur-sm transition-colors"><Icons.Minimize className="w-2 h-2 sm:w-2.5 sm:h-2.5" /></button>
+                                              </div>
+                                         </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {windows.map(w => {
+                            let variant = undefined;
+                            if (isMagnetic) {
+                                if (activeGridIds.includes(w.id)) {
+                                    variant = gridStyles[w.id]?.variant || 'main';
+                                } else if (!w.isMinimized) {
+                                    return null; 
+                                }
+                            }
+                            
+                            const isResizingGrid = drag && drag.type.startsWith('resize-split');
+                            const isThisDragged = drag && drag.id === w.id;
+                            const disableAnim = isResizingGrid || isThisDragged;
+
+                            return (
+                                <WindowFrame key={w.id} node={w} isActive={activeId === w.id} isMaximized={maximizedId === w.id} isMagnetic={isMagnetic} calculatedStyle={gridStyles[w.id]} sidebarVisible={isSidebarVisible} onInteract={onInteract} onClose={closeWindow} onMin={toggleMinimize} onMax={toggleMaximize} onFocusMain={focusMain} onDemote={demoteWindow} onTitleChange={updateTitle} variant={variant} disableAnim={disableAnim}> 
+                                    {InternalApps[w.type] ? (
+                                        React.createElement(InternalApps[w.type], {
+                                            data: w.data,
+                                            onLaunch: addWindow,
+                                            title: w.title
+                                        })
+                                    ) : externalApps[w.type] ? (
+                                        React.createElement(externalApps[w.type], {
+                                            data: w.data,
+                                            onUpdate: d => updateData(w.id, d),
+                                            instanceId: w.id,
+                                            title: w.title
+                                        })
+                                    ) : (
+                                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-slate-500 bg-slate-50 dark:bg-zinc-900 border-t border-slate-200 dark:border-white/10">
+                                            <Icons.Close className="w-10 h-10 mb-3 text-red-400 opacity-50" />
+                                            <h3 className="font-bold text-lg text-slate-700 dark:text-zinc-300">App Failed to Load</h3>
+                                            <p className="text-sm mt-2 text-center text-slate-500">The application <b>"{w.type}"</b> is missing or failed to compile.</p>
+                                            <p className="text-sm mt-4 font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg">Make sure it's added to <code>registry.js</code>.</p>
+                                        </div>
+                                    )}
+                                </WindowFrame>
+                            );
+                        })}
+                    </div>
+                    <Sidebar visible={isSidebarVisible} setVisible={setIsSidebarVisible} windows={windows} onRestore={restoreWindow} onClose={closeWindow} onCloseGroup={closeGroup} />
+                    <Dock onLaunch={addWindow} onOpenFile={() => fileInputRef.current.click()} onTheme={() => setIsDark(!isDark)} isDark={isDark} onArrange={arrangeWindows} onMinAll={minimizeAll} onMaxAll={maximizeAll} onCloseAll={closeAll} isVisible={isDockVisible} toggleVisible={() => setIsDockVisible(!isDockVisible)} isMagnetic={isMagnetic} toggleMagnetic={toggleMagnetic} onClearMemory={handleClearMemory} />
+                </div>
+            );
+       
+        };
+        
+        const root = ReactDOM.createRoot(document.getElementById('root')); root.render(<App />);
+    </script>
+</body>
+</html>
