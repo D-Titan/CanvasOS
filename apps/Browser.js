@@ -123,15 +123,16 @@ const BrowserApp = ({ data, onUpdate, instanceId }) => {
   ];
 
   return (
-    <div className="flex flex-col h-full w-full relative bg-white dark:bg-slate-950 overflow-hidden">
+    // Removed flex-col, relying on absolute positioning
+    <div className="relative h-full w-full bg-white dark:bg-slate-950 overflow-hidden">
       
-      <main className="flex-1 relative w-full overflow-hidden">
+      {/* Main content takes up the whole background */}
+      <main className="absolute inset-0 w-full h-full overflow-hidden">
         {!currentUrl ? (
-          <div className="absolute inset-0 overflow-y-auto p-4 flex flex-col items-center justify-center">
+          <div className="absolute inset-0 overflow-y-auto p-4 flex flex-col items-center justify-center pb-16">
             <h1 className="text-3xl font-bold mb-2 text-slate-800 dark:text-slate-100 tracking-tight text-center">Mini Web</h1>
-            <p className="text-slate-500 dark:text-slate-400 mb-8 text-sm text-center max-w-sm px-4">Enter a search term or a URL. You can also drag and drop text into the search bar below.</p>
+            <p className="text-slate-500 dark:text-slate-400 mb-8 text-sm text-center max-w-sm px-4">Enter a search term or a URL. You can also drag text directly into the input field.</p>
             
-            {/* Container responsive grid instead of viewport breakpoints */}
             <div className="w-full max-w-4xl px-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '1rem' }}>
               {shortcuts.map(s => (
                 <button key={s.name} onClick={() => handleNavigate(s.url)} className="flex flex-col items-center justify-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
@@ -143,7 +144,10 @@ const BrowserApp = ({ data, onUpdate, instanceId }) => {
         ) : (
           <div className="absolute inset-0 w-full h-full bg-white dark:bg-white">
              {currentUrl && (
-              <iframe key={currentUrl} src={currentUrl} className="w-full h-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-downloads" title="Browser View" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              // Added pb-12 (padding-bottom) so the bottom of the webpage isn't hidden behind the search bar
+              <div className="w-full h-full pb-[52px]">
+                <iframe key={currentUrl} src={currentUrl} className="w-full h-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-downloads" title="Browser View" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              </div>
             )}
           </div>
         )}
@@ -160,8 +164,8 @@ const BrowserApp = ({ data, onUpdate, instanceId }) => {
         </button>
       )}
 
-      {/* Sticky Bottom Navigation Bar */}
-      <footer className={"w-full shrink-0 flex items-center gap-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)] z-20 border-t border-slate-200 dark:border-slate-700 transition-all duration-300 overflow-hidden " + (isBarVisible ? "h-auto p-1.5 opacity-100" : "h-0 p-0 opacity-0 border-0")}>
+      {/* Sticky Bottom Navigation Bar - Now absolutely positioned at bottom-0 */}
+      <footer className={"absolute bottom-0 left-0 w-full flex items-center gap-1.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)] z-50 border-t border-slate-200 dark:border-slate-700 transition-all duration-300 overflow-hidden " + (isBarVisible ? "h-auto p-1.5 opacity-100" : "h-0 p-0 opacity-0 border-0")}>
         
         <div className="flex items-center shrink-0">
           <button onClick={goHome} disabled={!currentUrl} className="p-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors" title="Go to Home">
@@ -169,12 +173,8 @@ const BrowserApp = ({ data, onUpdate, instanceId }) => {
           </button>
         </div>
         
-        <div 
-          className="flex-1 flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg px-2.5 py-1.5 min-w-0 shadow-inner border border-transparent focus-within:border-blue-400 dark:focus-within:border-slate-500 transition-colors"
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          title="Drag and drop text here"
-        >
+        {/* Removed custom onDrop/onDrag events to let the browser handle it natively */}
+        <div className="flex-1 flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg px-2.5 py-1.5 min-w-0 shadow-inner border border-transparent focus-within:border-blue-400 dark:focus-within:border-slate-500 transition-colors">
           <IconSearch className="text-slate-400 w-3.5 h-3.5 mr-2 shrink-0" />
           <input 
             type="text" 
