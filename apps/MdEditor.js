@@ -4,17 +4,17 @@ const { useState, useEffect, useRef } = React;
 const defaultMarkdown = "";
 
 const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
-    const[markdown, setMarkdown] = useState(data?.content || defaultMarkdown);
-    const[htmlContent, setHtmlContent] = useState('');
+    const [markdown, setMarkdown] = useState(data?.content || defaultMarkdown);
+    const [htmlContent, setHtmlContent] = useState('');
     const [viewMode, setViewMode] = useState('split');
     const [notification, setNotification] = useState(null);
     const [splitRatio, setSplitRatio] = useState(50);
     const [isReady, setIsReady] = useState(false);
     
-    // Modernized Find & Replace State
-    const [showFindReplace, setShowFindReplace] = useState(false);
+    // Strict & Intuitive Find & Replace State
+    const[showFindReplace, setShowFindReplace] = useState(false);
     const [findText, setFindText] = useState('');
-    const[replaceText, setReplaceText] = useState('');
+    const [replaceText, setReplaceText] = useState('');
     const [matchMode, setMatchMode] = useState('smart'); // exact | smart | regex
     
     const [lastLoadedFile, setLastLoadedFile] = useState(null);
@@ -232,36 +232,45 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
         setMarkdown(e.target.value);
     };
 
-    // --- "Natural" Find & Replace Engine ---
+    // --- Strict & Intuitive Find & Replace Engine ---
     const executeReplaceAll = () => {
         if (!findText) return;
         try {
             let searchPattern = findText;
-            
+            let finalReplaceText = replaceText;
+
             if (matchMode === 'exact') {
-                // Escape all regex characters
-                searchPattern = findText.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
+                searchPattern = findText.replace(/[.*+?^\\$\\{}()|[\\]\\\\]/g, '\\\\$&');
             } else if (matchMode === 'smart') {
-                // 1. Escape regex chars safely
-                searchPattern = findText.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
-                // 2. Make literal spaces flexible (allows standard typing to match weird formatting)
+                // 1. Temporarily replace strict placeholders with unique tokens
+                searchPattern = searchPattern.split('{NUMBER}').join('__NUM__');
+                searchPattern = searchPattern.split('{WORD}').join('__WRD__');
+                searchPattern = searchPattern.split('{ANY}').join('__ANY__');
+                
+                // 2. Escape all remaining regex characters
+                searchPattern = searchPattern.replace(/[.*+?^\\$\\{}()|[\\]\\\\]/g, '\\\\$&');
+                
+                // 3. Inject actual regex capture groups back into the tokens
+                searchPattern = searchPattern.split('__NUM__').join('(\\\\d+)');
+                searchPattern = searchPattern.split('__WRD__').join('([A-Za-z]+)');
+                searchPattern = searchPattern.split('__ANY__').join('(.*?)');
+                
+                // 4. Make spaces flexible so users don't have to guess spacing
                 searchPattern = searchPattern.replace(/ /g, '\\\\s*');
-                // 3. Substitute natural keywords for powerful capture groups!
-                searchPattern = searchPattern.replace(/\\\\bnumber\\\\b/gi, '(\\\\d+)');
-                searchPattern = searchPattern.replace(/\\\\bword\\\\b/gi, '([A-Za-z]+)');
-                searchPattern = searchPattern.replace(/\\\\bany\\\\b/gi, '(.*?)');
+                
+                // 5. Convert user replacement {1} to actual regex replacement $1 safely
+                finalReplaceText = replaceText.replace(/\\{(\\d+)\\}/g, (match, p1) => '$' + p1);
             }
             
-            // Native regex mode skips processing and feeds directly
             const regex = new RegExp(searchPattern, 'g');
-            
             const matchCount = (markdown.match(regex) ||[]).length;
+            
             if (matchCount === 0) {
                 showNotification("No matches found.", "error");
                 return;
             }
 
-            const newMd = markdown.replace(regex, replaceText);
+            const newMd = markdown.replace(regex, finalReplaceText);
             setMarkdown(newMd);
             showNotification(\`Replaced \${matchCount} occurrence(s).\`);
         } catch(e) {
@@ -430,7 +439,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                             break;
                         case 'list':
                             token.items.forEach(item => {
-                                let itemRuns = [];
+                                let itemRuns =[];
                                 let nestedBlocks =[];
                                 item.tokens.forEach(itemToken => {
                                     if (itemToken.type === 'text') itemRuns.push(...buildTextRuns(itemToken.tokens ||[{type: 'text', raw: itemToken.text}]));
@@ -596,7 +605,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                         )}
                     </div>
 
-                    {/* Natural Find & Replace Engine */}
+                    {/* Strict & Intuitive Find & Replace Engine */}
                     {showFindReplace && (
                         <div className="absolute top-8 right-4 w-80 bg-white shadow-2xl rounded-xl border border-slate-200 z-40 p-3 animate-slide-up flex flex-col gap-3">
                             <div className="flex items-center justify-between">
@@ -622,7 +631,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                             
                             <div className="text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-200 leading-relaxed">
                                 {matchMode === 'exact' && "Finds the exact text you type."}
-                                {matchMode === 'smart' && <><b>Smart Match:</b> Type <code>number</code>, <code>word</code>, or <code>any</code> as wildcards.<br/>Ex: <code>[cite: number]</code> finds <code>[cite: 12]</code>.<br/>Use <code>$1</code>, <code>$2</code> in Replace to keep matched text.</>}
+                                {matchMode === 'smart' && <><b>Smart Match:</b> Use <code>{'{NUMBER}'}</code>, <code>{'{WORD}'}</code>, or <code>{'{ANY}'}</code> as wildcards.<br/>Ex: <code>[cite: {'{NUMBER}'}]</code> finds <code>[cite: 12]</code>.<br/>Use <code>{'{1}'}</code>, <code>{'{2}'}</code> in Replace to insert matched wildcards.</>}
                                 {matchMode === 'regex' && <><b>Regex:</b> <code>\\d+</code> (numbers), <code>\\w+</code> (words), <code>(.*?)</code> (capture anything). Use <code>$1</code> to replace.</>}
                             </div>
                             
