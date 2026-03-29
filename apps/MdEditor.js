@@ -3,7 +3,7 @@ const { useState, useEffect, useRef } = React;
 
 const defaultMarkdown = "";
 
-const MDEditorApp = ({ data, onUpdate, instanceId }) => {
+const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     const [markdown, setMarkdown] = useState(data?.content || defaultMarkdown);
     const [htmlContent, setHtmlContent] = useState('');
     const [viewMode, setViewMode] = useState('split');
@@ -11,11 +11,23 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
     const [splitRatio, setSplitRatio] = useState(50);
     const [isReady, setIsReady] = useState(false);
     
+    // Find & Replace State
+    const [showSearch, setShowSearch] = useState(false);
+    const [findQuery, setFindQuery] = useState('');
+    const [replaceQuery, setReplaceQuery] = useState('');
+    const [useRegex, setUseRegex] = useState(false);
+    
     const fileInputRef = useRef(null);
     const containerRef = useRef(null);
-    // NEW: We need a reference to the live preview to capture colors and headers for printing
     const previewRef = useRef(null); 
+    const editorRef = useRef(null);
     const isDragging = useRef(false);
+
+    // Dynamic filename base
+    const getBaseFilename = () => {
+        let base = title || 'document';
+        return base.replace(/\\.(md|docx|pdf|txt)$/gi, '');
+    };
 
     // Save state on change
     useEffect(() => {
@@ -25,7 +37,6 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
     }, [markdown, onUpdate]);
 
     useEffect(() => {
-        // If the OS passes raw text file data, inject it into the editor
         if (data?.fileData) {
             setMarkdown(data.fileData);
         } else if (data?.content) {
@@ -54,23 +65,27 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                 document.head.appendChild(script);
             });
 
-            addCss('https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;700&display=swap');
+            // Modern Google Fonts
+            addCss('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
             addCss('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
             addCss('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css');
+            addCss('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css');
 
             try {
                 await Promise.all([
                     addScript('https://cdn.jsdelivr.net/npm/marked/marked.min.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'),
-                    addScript('https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js')
+                    addScript('https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js'),
+                    addScript('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js')
                 ]);
 
                 await Promise.all([
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js'),
-                    addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js')
+                    addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js'),
+                    addScript('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js')
                 ]);
 
                 if (window.Prism && window.Prism.plugins && window.Prism.plugins.autoloader) {
@@ -87,7 +102,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
         loadDependencies();
     }, []);
 
-    // --- Markdown Parsing & Injecting Sticky Code Headers ---
+    // --- Markdown Parsing & Injection ---
     useEffect(() => {
         if (!isReady || !window.marked || !window.DOMPurify) return;
         try {
@@ -97,6 +112,19 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
             
             setTimeout(() => { 
                 if (window.Prism) window.Prism.highlightAll(); 
+                
+                // Render Math Equations via KaTeX
+                if (window.renderMathInElement && previewRef.current) {
+                    window.renderMathInElement(previewRef.current, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false},
+                            {left: '\\\\(', right: '\\\\)', display: false},
+                            {left: '\\\\[', right: '\\\\]', display: true}
+                        ],
+                        throwOnError: false
+                    });
+                }
                 
                 const preBlocks = document.querySelectorAll('.markdown-body pre');
                 preBlocks.forEach(pre => {
@@ -111,15 +139,10 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                             const langMap = {
                                 js: 'JavaScript', javascript: 'JavaScript',
                                 ts: 'TypeScript', typescript: 'TypeScript',
-                                html: 'HTML', css: 'CSS', 
-                                py: 'Python', python: 'Python',
-                                gdscript: 'GDScript',
-                                cpp: 'C++', c: 'C', csharp: 'C#', cs: 'C#',
-                                java: 'Java', json: 'JSON', xml: 'XML',
-                                bash: 'Bash', sh: 'Shell', sql: 'SQL',
-                                md: 'Markdown', yaml: 'YAML', yml: 'YAML',
-                                go: 'Go', rust: 'Rust', rb: 'Ruby',
-                                jsx: 'JSX', tsx: 'TSX'
+                                html: 'HTML', css: 'CSS', py: 'Python', python: 'Python',
+                                gdscript: 'GDScript', cpp: 'C++', c: 'C', cs: 'C#',
+                                java: 'Java', json: 'JSON', xml: 'XML', bash: 'Bash',
+                                md: 'Markdown', yaml: 'YAML', go: 'Go', rust: 'Rust'
                             };
                             lang = langMap[rawLang.toLowerCase()] || rawLang.charAt(0).toUpperCase() + rawLang.slice(1).toLowerCase();
                         }
@@ -139,10 +162,13 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                     langLabel.className = 'text-xs font-semibold tracking-wide text-slate-200 font-sans';
                     langLabel.innerText = lang;
 
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'flex items-center gap-2';
+
+                    // Copy Button
                     const copyBtn = document.createElement('button');
                     copyBtn.className = 'code-copy-btn flex items-center gap-1.5 text-[10px] font-semibold text-slate-200 hover:text-white transition-colors bg-white/10 hover:bg-white/25 px-2 py-1 rounded-lg active:scale-95';
                     copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> <span>Copy</span>';
-                    
                     copyBtn.onclick = () => {
                         const code = codeNode?.innerText || '';
                         const textarea = document.createElement('textarea');
@@ -157,19 +183,34 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                                 copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> <span>Copy</span>'; 
                                 copyBtn.classList.replace('bg-green-500/20', 'bg-white/10');
                             }, 2000);
-                        } catch (err) {
-                            console.error('Copy failed', err);
-                        } finally {
+                        } catch (err) {} finally {
                             document.body.removeChild(textarea);
                         }
                     };
 
+                    // Collapse Button
+                    const collapseBtn = document.createElement('button');
+                    collapseBtn.className = 'code-collapse-btn flex items-center justify-center text-slate-400 hover:text-white transition-colors p-1 rounded hover:bg-white/10 w-6 h-6';
+                    collapseBtn.innerHTML = '<i class="fa-solid fa-chevron-up text-[10px]"></i>';
+                    let isCollapsed = false;
+                    collapseBtn.onclick = () => {
+                        isCollapsed = !isCollapsed;
+                        if (isCollapsed) {
+                            pre.style.display = 'none';
+                            collapseBtn.innerHTML = '<i class="fa-solid fa-chevron-down text-[10px]"></i>';
+                        } else {
+                            pre.style.display = 'block';
+                            collapseBtn.innerHTML = '<i class="fa-solid fa-chevron-up text-[10px]"></i>';
+                        }
+                    };
+
+                    actionsDiv.appendChild(copyBtn);
+                    actionsDiv.appendChild(collapseBtn);
                     header.appendChild(langLabel);
-                    header.appendChild(copyBtn);
+                    header.appendChild(actionsDiv);
                     stickyMask.appendChild(header);
                     
                     pre.classList.add('!mt-0', 'shadow-sm', '!rounded-b-xl', '!rounded-t-none', '!border-t-0');
-                    
                     wrapper.appendChild(stickyMask);
                     wrapper.appendChild(pre);
                 });
@@ -179,9 +220,34 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
         }
     }, [markdown, isReady]);
 
-    // --- INTELLIGENT TEXT EDITING (Scroll Position Locked) ---
+    // --- Search & Replace Logic ---
+    const performSearchReplace = (replaceAll = false) => {
+        if (!findQuery) return;
+        try {
+            let newMarkdown = markdown;
+            if (useRegex) {
+                const flags = replaceAll ? 'g' : '';
+                const regex = new RegExp(findQuery, flags);
+                newMarkdown = newMarkdown.replace(regex, replaceQuery);
+            } else {
+                if (replaceAll) {
+                    newMarkdown = newMarkdown.split(findQuery).join(replaceQuery);
+                } else {
+                    newMarkdown = newMarkdown.replace(findQuery, replaceQuery);
+                }
+            }
+            setMarkdown(newMarkdown);
+            showNotification(replaceAll ? "Replaced all occurrences" : "Replaced first occurrence");
+        } catch (err) {
+            showNotification("Invalid Regex pattern", "error");
+        }
+    };
+
+    // --- INTELLIGENT TEXT EDITING (Optimized) ---
     const handleKeyDown = (e) => {
-        const textarea = e.target;
+        const textarea = editorRef.current;
+        if (!textarea) return;
+        
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const scrollTop = textarea.scrollTop;
@@ -193,10 +259,11 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
             if (pairs[prevChar] && pairs[prevChar] === nextChar) {
                 e.preventDefault();
                 setMarkdown(markdown.substring(0, start - 1) + markdown.substring(end + 1));
-                setTimeout(() => { 
-                    textarea.selectionStart = textarea.selectionEnd = start - 1; 
-                    textarea.scrollTop = scrollTop;
-                }, 0);
+                requestAnimationFrame(() => {
+                    if(!editorRef.current) return;
+                    editorRef.current.selectionStart = editorRef.current.selectionEnd = start - 1; 
+                    editorRef.current.scrollTop = scrollTop;
+                });
             }
         }
 
@@ -204,16 +271,22 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
             e.preventDefault();
             const selectedText = markdown.substring(start, end);
             setMarkdown(markdown.substring(0, start) + e.key + selectedText + pairs[e.key] + markdown.substring(end));
-            setTimeout(() => {
-                textarea.selectionStart = start + 1;
-                textarea.selectionEnd = start + 1 + selectedText.length;
-                textarea.scrollTop = scrollTop;
-            }, 0);
+            requestAnimationFrame(() => {
+                if(!editorRef.current) return;
+                editorRef.current.selectionStart = start + 1;
+                editorRef.current.selectionEnd = start + 1 + selectedText.length;
+                editorRef.current.scrollTop = scrollTop;
+            });
         }
     };
 
     const handleChange = (e) => {
-        const textarea = e.target;
+        const textarea = editorRef.current;
+        if (!textarea) {
+            setMarkdown(e.target.value);
+            return;
+        }
+
         const val = textarea.value;
         const start = textarea.selectionStart;
         const scrollTop = textarea.scrollTop;
@@ -236,10 +309,11 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                         const closingTag = '</' + tagMatch[1] + '>';
                         const newMarkdown = val.substring(0, start) + closingTag + val.substring(start);
                         setMarkdown(newMarkdown);
-                        setTimeout(() => {
-                            textarea.selectionStart = textarea.selectionEnd = start;
-                            textarea.scrollTop = scrollTop;
-                        }, 0);
+                        requestAnimationFrame(() => {
+                            if(!editorRef.current) return;
+                            editorRef.current.selectionStart = editorRef.current.selectionEnd = start;
+                            editorRef.current.scrollTop = scrollTop;
+                        });
                         return;
                     }
                 }
@@ -248,10 +322,11 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
             if (stepOverChars.includes(data) && val[start] === data) {
                 const newMarkdown = val.substring(0, start - 1) + val.substring(start);
                 setMarkdown(newMarkdown);
-                setTimeout(() => {
-                    textarea.selectionStart = textarea.selectionEnd = start;
-                    textarea.scrollTop = scrollTop;
-                }, 0);
+                requestAnimationFrame(() => {
+                    if(!editorRef.current) return;
+                    editorRef.current.selectionStart = editorRef.current.selectionEnd = start;
+                    editorRef.current.scrollTop = scrollTop;
+                });
                 return;
             }
 
@@ -259,10 +334,11 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                 const closingChar = pairs[data];
                 const newMarkdown = val.substring(0, start) + closingChar + val.substring(start);
                 setMarkdown(newMarkdown);
-                setTimeout(() => {
-                    textarea.selectionStart = textarea.selectionEnd = start;
-                    textarea.scrollTop = scrollTop;
-                }, 0);
+                requestAnimationFrame(() => {
+                    if(!editorRef.current) return;
+                    editorRef.current.selectionStart = editorRef.current.selectionEnd = start;
+                    editorRef.current.scrollTop = scrollTop;
+                });
                 return;
             }
         }
@@ -331,26 +407,22 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
 
     const exportMD = () => {
         const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-        triggerDownload(blob, 'document.md');
+        triggerDownload(blob, getBaseFilename() + '.md');
         showNotification("Exported as .md successfully!");
     };
 
-    // FIX: Print the exact DOM elements to preserve syntax colors and language headers
     const exportPDF = () => {
         if (!previewRef.current) return;
         
         const printContainer = document.createElement('div');
         printContainer.id = 'temp-print-container';
-        
-        // Grab the *live* HTML that already contains Prism classes and headers
         printContainer.innerHTML = '<div class="markdown-body">' + previewRef.current.innerHTML + '</div>';
         document.body.appendChild(printContainer);
 
         const printStyle = document.createElement('style');
         printStyle.id = 'temp-print-style';
         
-        // Force the browser to print colors (-webkit-print-color-adjust)
-        // Hide the copy button, but keep the header
+        // Force pre to display block to override collapsed state
         printStyle.innerHTML = 
             '@media screen { ' +
             '  #temp-print-container { display: none !important; } ' +
@@ -359,10 +431,10 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
             '  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; } ' +
             '  body > *:not(#temp-print-container) { display: none !important; } ' +
             '  #temp-print-container { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; background: white !important; color: black !important; padding: 15mm !important; box-sizing: border-box !important; } ' +
-            '  .code-copy-btn { display: none !important; } ' +
+            '  .code-copy-btn, .code-collapse-btn { display: none !important; } ' +
             '  .code-header-sticky { position: static !important; border-bottom: 1px solid #475569 !important; } ' +
             '  .code-block-wrapper { page-break-inside: avoid; break-inside: avoid; margin-bottom: 24px; } ' +
-            '  pre { margin-top: 0 !important; page-break-inside: avoid; break-inside: avoid; } ' +
+            '  .markdown-body pre { display: block !important; margin-top: 0 !important; page-break-inside: avoid; break-inside: avoid; } ' +
             '  @page { margin: 0mm; size: auto; } ' +
             '}';
             
@@ -380,7 +452,6 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
             showNotification("DOCX library is still loading.", "error");
             return;
         }
-
         try {
             const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType } = window.docx;
             const tokens = window.marked.lexer(markdown);
@@ -476,7 +547,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
             });
 
             const blob = await Packer.toBlob(doc);
-            triggerDownload(blob, 'document.docx');
+            triggerDownload(blob, getBaseFilename() + '.docx');
             showNotification("Exported as formatted .docx successfully!");
 
         } catch (error) {
@@ -489,7 +560,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
         return (
             <div className="flex h-full w-full items-center justify-center bg-slate-50 flex-col gap-4">
                 <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-600 font-medium">Booting Editor Engines...</p>
+                <p className="text-slate-600 font-medium font-sans">Booting Editor Engines...</p>
             </div>
         );
     }
@@ -498,7 +569,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
         <div id="app-container" className="flex flex-col h-full w-full bg-slate-50 overflow-hidden font-sans">
             
             <style dangerouslySetInnerHTML={{__html: 
-                '.markdown-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; } ' +
+                '.markdown-body { font-family: "Inter", -apple-system, sans-serif; line-height: 1.6; color: #333; } ' +
                 '.markdown-body h1, .markdown-body h2, .markdown-body h3 { border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; margin-top: 24px; margin-bottom: 16px; font-weight: 600; } ' +
                 '.markdown-body h1 { font-size: 2em; } ' +
                 '.markdown-body h2 { font-size: 1.5em; } ' +
@@ -509,7 +580,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                 '.markdown-body ol { list-style-type: decimal; } ' +
                 '.markdown-body li { margin-bottom: 0.25em; } ' +
                 '.markdown-body blockquote { margin: 0 0 16px; padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; background: #f9fafb; padding-block: 8px;} ' +
-                '.markdown-body code { font-family: "Google Sans Code", ui-monospace, Consolas, monospace; font-size: 85%; background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; border-radius: 3px; } ' +
+                '.markdown-body code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 85%; background-color: rgba(27,31,35,0.05); padding: 0.2em 0.4em; border-radius: 3px; } ' +
                 '.markdown-body pre { background-color: #f1f5f9; color: #334155; border-radius: 8px; padding: 16px; overflow: auto; border: 1px solid #e2e8f0; position: relative; z-index: 0; } ' +
                 '.markdown-body pre code { background-color: transparent; padding: 0; display: block; overflow-x: auto; color: inherit; font-size: 14px;} ' +
                 '.markdown-body table { border-collapse: collapse; width: 100%; margin-bottom: 16px; } ' +
@@ -519,6 +590,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                 '::-webkit-scrollbar { width: 8px; height: 8px; } ' +
                 '::-webkit-scrollbar-track { background: transparent; } ' +
                 '::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; } ' +
+                '.editor-textarea { font-family: "JetBrains Mono", ui-monospace, monospace; } ' +
                 '.editor-textarea::-webkit-scrollbar-thumb { background: #4b5563; }'
             }} />
 
@@ -532,6 +604,10 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                     </button>
                     <button onClick={() => {setViewMode('preview'); setSplitRatio(50);}} className={'flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium transition-colors ' + (viewMode === 'preview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
                         <i className="fa-solid fa-eye"></i> <span>Preview</span>
+                    </button>
+                    <div className="w-px h-4 bg-slate-300 mx-1 self-center"></div>
+                    <button onClick={() => setShowSearch(!showSearch)} className={'flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium transition-colors ' + (showSearch ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')} title="Find & Replace">
+                        <i className="fa-solid fa-magnifying-glass"></i>
                     </button>
                 </div>
 
@@ -560,6 +636,25 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                 </div>
             </header>
 
+            {/* Find & Replace Toolbar */}
+            {showSearch && (
+                <div className="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex flex-wrap items-center gap-3 text-xs z-10 animate-slide-up flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                        <input type="text" placeholder="Find..." value={findQuery} onChange={e => setFindQuery(e.target.value)} className="px-2 py-1 rounded border border-slate-300 w-32 md:w-48 outline-none focus:border-blue-500 font-mono" />
+                        <input type="text" placeholder="Replace..." value={replaceQuery} onChange={e => setReplaceQuery(e.target.value)} className="px-2 py-1 rounded border border-slate-300 w-32 md:w-48 outline-none focus:border-blue-500 font-mono" />
+                    </div>
+                    <label className="flex items-center gap-1.5 cursor-pointer font-medium text-slate-600">
+                        <input type="checkbox" checked={useRegex} onChange={e => setUseRegex(e.target.checked)} className="rounded text-blue-500 focus:ring-blue-500" />
+                        Regex
+                    </label>
+                    <div className="flex items-center gap-1 border-l border-slate-300 pl-3">
+                        <button onClick={() => performSearchReplace(false)} className="px-2 py-1 bg-white border border-slate-300 font-medium text-slate-700 rounded hover:bg-slate-50 transition-colors">Replace</button>
+                        <button onClick={() => performSearchReplace(true)} className="px-2 py-1 bg-white border border-slate-300 font-medium text-slate-700 rounded hover:bg-slate-50 transition-colors">Replace All</button>
+                    </div>
+                    <button onClick={() => setShowSearch(false)} className="ml-auto text-slate-400 hover:text-slate-700 p-1"><i className="fa-solid fa-xmark text-sm"></i></button>
+                </div>
+            )}
+
             {notification && (
                 <div className="absolute top-12 left-1/2 transform -translate-x-1/2 z-50 animate-bounce no-print">
                     <div className={'flex items-center gap-2 px-3 py-1.5 rounded-full shadow-lg text-xs font-medium text-white ' + (notification.type === 'error' ? 'bg-red-500' : 'bg-green-500')}>
@@ -587,7 +682,8 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                         )}
                     </div>
                     <textarea
-                        className="flex-1 w-full p-3 bg-[#1e1e1e] text-gray-200 font-mono text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 overflow-y-auto min-h-0 editor-textarea"
+                        ref={editorRef}
+                        className="flex-1 w-full p-3 bg-[#1e1e1e] text-gray-200 text-[13px] md:text-sm resize-none focus:outline-none overflow-y-auto min-h-0 editor-textarea leading-relaxed"
                         value={markdown}
                         onChange={handleChange}
                         onKeyDown={handleKeyDown}
@@ -623,7 +719,6 @@ const MDEditorApp = ({ data, onUpdate, instanceId }) => {
                     </div>
                     <div className="flex-1 overflow-y-auto min-h-0 min-w-0 print-scroll-fix relative bg-white">
                         <div className="p-4 md:p-6">
-                            {/* FIX: Attached previewRef to capture live DOM elements for printing */}
                             <div ref={previewRef} className="markdown-body max-w-4xl mx-auto" dangerouslySetInnerHTML={{ __html: htmlContent }} />
                         </div>
                     </div>
