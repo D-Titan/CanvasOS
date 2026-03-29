@@ -27,7 +27,7 @@ const Icon = ({ name, size = 18, className = "" }) => {
 
 const WordEditorApp = ({ data, onUpdate, instanceId }) => {
   const [isReady, setIsReady] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
+  const[wordCount, setWordCount] = useState(0);
   
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -53,7 +53,7 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
     }
 
     const loadScripts = async () => {
-      const scripts = [
+      const scripts =[
         'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
         'https://cdnjs.cloudflare.com/ajax/libs/turndown/7.1.2/turndown.min.js',
         'https://unpkg.com/html-docx-js@0.3.1/dist/html-docx.js' 
@@ -82,7 +82,7 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
       }
     };
     loadScripts();
-  }, []);
+  },[]);
 
   // Handle Dynamic File Uploads from OS Dock
   useEffect(() => {
@@ -123,7 +123,7 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  },[]);
 
   const updateWordCount = () => {
     if (!editorRef.current) return;
@@ -154,16 +154,18 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
     saveSelection();
     updateWordCount();
     
-    const commands = ['bold', 'italic', 'justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'insertUnorderedList', 'insertOrderedList'];
     const newFormat = { ...format };
     
-    commands.forEach(cmd => { newFormat[cmd] = document.queryCommandState(cmd); });
+    // Safely query DOM state
+    const commands =['bold', 'italic', 'justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull', 'insertUnorderedList', 'insertOrderedList'];
+    commands.forEach(cmd => {
+      try { newFormat[cmd] = document.queryCommandState(cmd); } catch(e) {}
+    });
 
     try {
       let formatBlock = document.queryCommandValue('formatBlock');
       if (formatBlock) newFormat.formatBlock = formatBlock.replace(/[<>]/g, '').toLowerCase();
       
-      // Update Highlighter Toggle UI based on cursor position
       let backColorCmd = document.queryCommandSupported('hiliteColor') ? 'hiliteColor' : 'backColor';
       let backColor = document.queryCommandValue(backColorCmd);
       if (backColor && backColor !== 'transparent' && backColor !== 'rgba(0, 0, 0, 0)' && backColor !== 'rgb(255, 255, 255)' && backColor !== '#ffffff') {
@@ -171,13 +173,13 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
       } else {
         setIsHighlighting(false);
       }
-    } catch (e) { }
+    } catch (e) {}
 
     setFormat(newFormat);
   };
 
   const execCommand = (command, value = null) => {
-    restoreSelection();
+    editorRef.current?.focus();
     if (command === 'formatBlock') {
       document.execCommand(command, false, '<' + value + '>');
     } else {
@@ -351,8 +353,10 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
 
   const ToolbarButton = ({ icon, command, value, isActive }) => (
     <button
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={() => execCommand(command, value)}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        execCommand(command, value);
+      }}
       className={'p-1.5 rounded-lg transition-colors shrink-0 flex items-center justify-center ' + (isActive ? 'bg-blue-100 text-blue-700' : 'hover:bg-slate-200 text-slate-700')}
       title={command}
     >
@@ -363,7 +367,7 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
   return (
     <div className="flex flex-col h-full w-full bg-white font-sans overflow-hidden">
       
-      {/* Container Queries for fully responsive internal text and layout */}
+      {/* CRITICAL CSS OVERRIDES: Bypasses Tailwind CSS Resets specifically for this internal editor. */}
       <style dangerouslySetInnerHTML={{ __html: \`
         .editor-wrapper { container-type: inline-size; }
         .docx-editor {
@@ -375,14 +379,25 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
             background: white;
             color: #1e293b;
         }
-        .docx-editor h1 { font-size: 2.2em; font-weight: 700; margin-bottom: 0.5em; line-height: 1.2; color: #0f172a; }
-        .docx-editor h2 { font-size: 1.7em; font-weight: 700; margin-bottom: 0.5em; line-height: 1.3; color: #0f172a; }
-        .docx-editor h3 { font-size: 1.3em; font-weight: 700; margin-bottom: 0.5em; line-height: 1.4; color: #0f172a; }
-        .docx-editor p { margin-bottom: 1em; line-height: 1.6; }
-        .docx-editor ul { list-style-type: disc; margin-left: 2em; margin-bottom: 1em; }
-        .docx-editor ol { list-style-type: decimal; margin-left: 2em; margin-bottom: 1em; }
-        .docx-editor li { margin-bottom: 0.5em; }
+        .docx-editor h1 { font-size: 2.2em !important; font-weight: 700 !important; margin-bottom: 0.5em !important; line-height: 1.2 !important; color: #0f172a !important; display: block !important; }
+        .docx-editor h2 { font-size: 1.7em !important; font-weight: 700 !important; margin-bottom: 0.5em !important; line-height: 1.3 !important; color: #0f172a !important; display: block !important; }
+        .docx-editor h3 { font-size: 1.3em !important; font-weight: 700 !important; margin-bottom: 0.5em !important; line-height: 1.4 !important; color: #0f172a !important; display: block !important; }
+        .docx-editor p { margin-bottom: 1em !important; line-height: 1.6 !important; display: block !important; }
         
+        /* Strict List Re-Enablers against Tailwind Preflight */
+        .docx-editor ul { list-style-type: disc !important; list-style-position: outside !important; padding-left: 2.5em !important; margin-bottom: 1em !important; display: block !important; }
+        .docx-editor ol { list-style-type: decimal !important; list-style-position: outside !important; padding-left: 2.5em !important; margin-bottom: 1em !important; display: block !important; }
+        .docx-editor li { display: list-item !important; margin-bottom: 0.5em !important; }
+        
+        /* Indent Restorations */
+        .docx-editor blockquote { margin-left: 40px !important; margin-right: 40px !important; border: none !important; color: inherit !important; font-style: normal !important; display: block !important; }
+        
+        /* Alignment Hard-Enforcers */
+        .docx-editor[style*="text-align: center"], .docx-editor [align="center"] { text-align: center !important; }
+        .docx-editor [style*="text-align: right"], .docx-editor [align="right"] { text-align: right !important; }
+        .docx-editor [style*="text-align: justify"], .docx-editor [align="justify"] { text-align: justify !important; }
+        .docx-editor[style*="text-align: left"], .docx-editor [align="left"] { text-align: left !important; }
+
         .hide-scrollbar::-webkit-scrollbar { display: none; } 
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       \`}} />
@@ -405,7 +420,11 @@ const WordEditorApp = ({ data, onUpdate, instanceId }) => {
 
             <select 
               className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-700 bg-white hover:bg-slate-100 cursor-pointer w-28 shrink-0 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-              onChange={(e) => execCommand('formatBlock', e.target.value)}
+              onChange={(e) => {
+                  execCommand('formatBlock', e.target.value);
+                  // Ensure focus returns correctly to the editor after dropdown selection
+                  setTimeout(() => editorRef.current?.focus(), 10);
+              }}
               value={format.formatBlock || 'p'}
             >
               <option value="p">Normal</option>
