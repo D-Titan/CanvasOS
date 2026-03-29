@@ -2,6 +2,12 @@ window.CanvasApps = {}; // This will hold the giant strings of code
 
 window.AppRegistry = [
     {
+        id: 'OneCompiler',
+        name: 'Compiler',
+        iconSvg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="8 10 12 14 8 18"></polyline><line x1="13" y1="18" x2="17" y2="18"></line></svg>',
+        scriptPath: 'apps/OneCompiler.js'
+    },
+    {
         id: 'Browser', // A unique ID for the system
         name: 'Browser', // The label on the Dock
         hidden: false,
