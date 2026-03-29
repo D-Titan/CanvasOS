@@ -6,13 +6,13 @@ const defaultMarkdown = "";
 const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     const [markdown, setMarkdown] = useState(data?.content || defaultMarkdown);
     const [htmlContent, setHtmlContent] = useState('');
-    const [viewMode, setViewMode] = useState('split');
+    const[viewMode, setViewMode] = useState('split');
     const [notification, setNotification] = useState(null);
-    const [splitRatio, setSplitRatio] = useState(50);
+    const[splitRatio, setSplitRatio] = useState(50);
     const [isReady, setIsReady] = useState(false);
     
     // Strict & Intuitive Find & Replace State
-    const[showFindReplace, setShowFindReplace] = useState(false);
+    const [showFindReplace, setShowFindReplace] = useState(false);
     const [findText, setFindText] = useState('');
     const [replaceText, setReplaceText] = useState('');
     const [matchMode, setMatchMode] = useState('smart'); // exact | smart | regex
@@ -59,7 +59,10 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                 script.src = src;
                 script.async = true;
                 script.onload = resolve;
-                script.onerror = reject;
+                script.onerror = () => {
+                    console.error('Failed to load:', src);
+                    reject(new Error('Failed to load ' + src));
+                };
                 document.head.appendChild(script);
             });
 
@@ -70,8 +73,9 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             addCss('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css');
 
             try {
+                // FIXED: Pinned explicit versions and absolute paths for Marked v12+ UMD modules
                 await Promise.all([
-                    addScript('https://cdn.jsdelivr.net/npm/marked/marked.min.js'),
+                    addScript('https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.umd.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'),
                     addScript('https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js'),
@@ -79,7 +83,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                 ]);
 
                 await Promise.all([
-                    addScript('https://cdn.jsdelivr.net/npm/marked-katex-extension@3.1.3/lib/index.umd.js'),
+                    addScript('https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.7/lib/index.umd.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js'),
@@ -101,6 +105,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             } catch (err) {
                 console.error("Failed to load core scripts:", err);
                 showNotification("Failed to load some editor components.", "error");
+                // Allow it to be ready anyway so user isn't stuck
                 setIsReady(true); 
             }
         };
@@ -398,7 +403,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             const tokens = window.marked.lexer(markdown);
 
             const buildTextRuns = (inlineTokens, formatOpts = {}) => {
-                if (!inlineTokens) return [];
+                if (!inlineTokens) return[];
                 let runs =[];
                 inlineTokens.forEach(t => {
                     const currentOpts = { ...formatOpts };
@@ -439,7 +444,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                             break;
                         case 'list':
                             token.items.forEach(item => {
-                                let itemRuns =[];
+                                let itemRuns = [];
                                 let nestedBlocks =[];
                                 item.tokens.forEach(itemToken => {
                                     if (itemToken.type === 'text') itemRuns.push(...buildTextRuns(itemToken.tokens ||[{type: 'text', raw: itemToken.text}]));
