@@ -5,19 +5,19 @@ const defaultMarkdown = "";
 
 const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     const [markdown, setMarkdown] = useState(data?.content || defaultMarkdown);
-    const [htmlContent, setHtmlContent] = useState('');
-    const[viewMode, setViewMode] = useState('split');
+    const[htmlContent, setHtmlContent] = useState('');
+    const [viewMode, setViewMode] = useState('split');
     const [notification, setNotification] = useState(null);
-    const[splitRatio, setSplitRatio] = useState(50);
+    const [splitRatio, setSplitRatio] = useState(50);
     const [isReady, setIsReady] = useState(false);
     
     // Strict & Intuitive Find & Replace State
     const [showFindReplace, setShowFindReplace] = useState(false);
-    const [findText, setFindText] = useState('');
+    const[findText, setFindText] = useState('');
     const [replaceText, setReplaceText] = useState('');
-    const [matchMode, setMatchMode] = useState('smart'); // exact | smart | regex
+    const[matchMode, setMatchMode] = useState('smart'); // exact | smart | regex
     
-    const [lastLoadedFile, setLastLoadedFile] = useState(null);
+    const[lastLoadedFile, setLastLoadedFile] = useState(null);
     
     const fileInputRef = useRef(null);
     const containerRef = useRef(null);
@@ -73,7 +73,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             addCss('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css');
 
             try {
-                // FIXED: Pinned explicit versions and absolute paths for Marked v12+ UMD modules
+                // Pinned explicit versions and absolute paths for Marked v12+ UMD modules
                 await Promise.all([
                     addScript('https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.umd.js'),
                     addScript('https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js'),
@@ -226,15 +226,113 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
         }
     },[markdown, isReady]);
 
+    // --- INTELLIGENT TEXT EDITING ENGINE ---
     const handleKeyDown = (e) => {
+        const textarea = e.target;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const scrollTop = textarea.scrollTop;
+        const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '*': '*', '_': '_', '~': '~', '<': '>' };
+
+        // Handle Tab Formatting
         if (e.key === 'Tab') {
             e.preventDefault();
             document.execCommand("insertText", false, "    ");
+            return;
+        }
+
+        // Smart Delete: If deleting an opening pair and the next char is the closing pair, delete both.
+        if (e.key === 'Backspace' && start === end && start > 0) {
+            const prevChar = markdown[start - 1];
+            const nextChar = markdown[start];
+            if (pairs[prevChar] && pairs[prevChar] === nextChar) {
+                e.preventDefault();
+                const newMd = markdown.substring(0, start - 1) + markdown.substring(end + 1);
+                setMarkdown(newMd);
+                setTimeout(() => { 
+                    textarea.selectionStart = textarea.selectionEnd = start - 1; 
+                    textarea.scrollTop = scrollTop;
+                }, 0);
+                return;
+            }
+        }
+
+        // Smart Wrap: If text is selected and user types an opening pair, wrap the text.
+        if (pairs[e.key] && start !== end) {
+            e.preventDefault();
+            const selectedText = markdown.substring(start, end);
+            const newMd = markdown.substring(0, start) + e.key + selectedText + pairs[e.key] + markdown.substring(end);
+            setMarkdown(newMd);
+            setTimeout(() => {
+                textarea.selectionStart = start + 1;
+                textarea.selectionEnd = start + 1 + selectedText.length;
+                textarea.scrollTop = scrollTop;
+            }, 0);
         }
     };
 
     const handleChange = (e) => {
-        setMarkdown(e.target.value);
+        const textarea = e.target;
+        const val = textarea.value;
+        const start = textarea.selectionStart;
+        const scrollTop = textarea.scrollTop;
+        
+        // NativeEvent properties for precision input detection
+        const inputType = e.nativeEvent?.inputType;
+        const data = e.nativeEvent?.data;
+
+        const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '*': '*', '_': '_', '~': '~', '<': '>' };
+        const stepOverChars = [')', ']', '}', '>', '"', "'", '*', '_', '~']; 
+
+        if (inputType === 'insertText' && data !== null && data.length === 1) {
+            
+            // 1. Auto-complete HTML tags
+            if (data === '>') {
+                const textBeforeCursor = val.substring(0, start);
+                const tagMatch = textBeforeCursor.match(/<([a-zA-Z][a-zA-Z0-9]*)[^>]*>$/);
+                
+                if (tagMatch) {
+                    const tagName = tagMatch[1].toLowerCase();
+                    const voidElements =['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+                    
+                    if (!voidElements.includes(tagName)) {
+                        const closingTag = '</' + tagMatch[1] + '>';
+                        const newMarkdown = val.substring(0, start) + closingTag + val.substring(start);
+                        setMarkdown(newMarkdown);
+                        setTimeout(() => {
+                            textarea.selectionStart = textarea.selectionEnd = start;
+                            textarea.scrollTop = scrollTop;
+                        }, 0);
+                        return;
+                    }
+                }
+            }
+
+            // 2. Step over matching closing characters
+            if (stepOverChars.includes(data) && val[start] === data) {
+                const newMarkdown = val.substring(0, start - 1) + val.substring(start);
+                setMarkdown(newMarkdown);
+                setTimeout(() => {
+                    textarea.selectionStart = textarea.selectionEnd = start;
+                    textarea.scrollTop = scrollTop;
+                }, 0);
+                return;
+            }
+
+            // 3. Auto-pair brackets/quotes (Excluding '>' since it's handled by HTML logic)
+            if (pairs[data] && data !== '>') { 
+                const closingChar = pairs[data];
+                const newMarkdown = val.substring(0, start) + closingChar + val.substring(start);
+                setMarkdown(newMarkdown);
+                setTimeout(() => {
+                    textarea.selectionStart = textarea.selectionEnd = start;
+                    textarea.scrollTop = scrollTop;
+                }, 0);
+                return;
+            }
+        }
+        
+        setMarkdown(val);
     };
 
     // --- Strict & Intuitive Find & Replace Engine ---
@@ -403,7 +501,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             const tokens = window.marked.lexer(markdown);
 
             const buildTextRuns = (inlineTokens, formatOpts = {}) => {
-                if (!inlineTokens) return[];
+                if (!inlineTokens) return [];
                 let runs =[];
                 inlineTokens.forEach(t => {
                     const currentOpts = { ...formatOpts };
@@ -489,7 +587,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                         { reference: "ordered-list", levels: Array.from({ length: 6 }).map((_, i) => ({ level: i, format: i % 2 === 0 ? "decimal" : "lowerLetter", text: '%' + (i + 1) + '.', alignment: "start", style: { paragraph: { indent: { left: 720 * (i + 1), hanging: 360 } } } })) }
                     ]
                 },
-                sections:[{ properties: {}, children: docChildren.length > 0 ? docChildren : [new Paragraph("Empty Document")] }]
+                sections:[{ properties: {}, children: docChildren.length > 0 ? docChildren :[new Paragraph("Empty Document")] }]
             });
 
             const blob = await Packer.toBlob(doc);
