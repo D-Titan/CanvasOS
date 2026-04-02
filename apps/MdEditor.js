@@ -10,12 +10,13 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     const [notification, setNotification] = useState(null);
     const [splitRatio, setSplitRatio] = useState(50);
     const [isReady, setIsReady] = useState(false);
+    const [isCompact, setIsCompact] = useState(false);
     
     // Strict & Intuitive Find & Replace State
     const [showFindReplace, setShowFindReplace] = useState(false);
     const[findText, setFindText] = useState('');
     const [replaceText, setReplaceText] = useState('');
-    const[matchMode, setMatchMode] = useState('smart'); // exact | smart | regex
+    const[matchMode, setMatchMode] = useState('exact'); // exact | smart | regex
     
     const[lastLoadedFile, setLastLoadedFile] = useState(null);
     
@@ -41,6 +42,19 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             setMarkdown(data.content);
         }
     },[data?.fileData, data?.content]);
+
+    // Container query for flawless tab-based responsiveness
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const observer = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                // If the container is less than 640px wide, switch to compact mobile-style view
+                setIsCompact(entry.contentRect.width < 640);
+            }
+        });
+        observer.observe(containerRef.current);
+        return () => observer.disconnect();
+    }, []);
 
     // --- Robust Dependency Loader ---
     useEffect(() => {
@@ -339,48 +353,92 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     const executeReplaceAll = () => {
         if (!findText) return;
         try {
-            let searchPattern = findText;
-            let finalReplaceText = replaceText;
-
+            // EXACT Match
             if (matchMode === 'exact') {
-                searchPattern = findText.replace(/[.*+?^\\$\\{}()|[\\]\\\\]/g, '\\\\$&');
-            } else if (matchMode === 'smart') {
-                // 1. Temporarily replace strict placeholders with unique tokens
+                const parts = markdown.split(findText);
+                if (parts.length === 1) {
+                    showNotification("No matches found.", "error");
+                    return;
+                }
+                const newMd = parts.join(replaceText);
+                setMarkdown(newMd);
+                showNotification("Replaced " + (parts.length - 1) + " occurrence(s).");
+                return;
+            }
+            
+            // SMART / REGEX Match
+            let searchPattern = findText;
+            let wildcards = [];
+
+            if (matchMode === 'smart') {
+                wildcards = searchPattern.match(/\\{(ANY|WORD|NUMBER)\\}/g) || [];
+                
                 searchPattern = searchPattern.split('{NUMBER}').join('__NUM__');
                 searchPattern = searchPattern.split('{WORD}').join('__WRD__');
                 searchPattern = searchPattern.split('{ANY}').join('__ANY__');
                 
-                // 2. Escape all remaining regex characters
-                searchPattern = searchPattern.replace(/[.*+?^\\$\\{}()|[\\]\\\\]/g, '\\\\$&');
+                // Escape regex chars
+                searchPattern = searchPattern.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
                 
-                // 3. Inject actual regex capture groups back into the tokens
+                // Restore capture groups
                 searchPattern = searchPattern.split('__NUM__').join('(\\\\d+)');
                 searchPattern = searchPattern.split('__WRD__').join('([A-Za-z]+)');
                 searchPattern = searchPattern.split('__ANY__').join('(.*?)');
-                
-                // 4. Make spaces flexible so users don't have to guess spacing
                 searchPattern = searchPattern.replace(/ /g, '\\\\s*');
-                
-                // 5. Convert user replacement {1} to actual regex replacement $1 safely
-                finalReplaceText = replaceText.replace(/\\{(\\d+)\\}/g, (match, p1) => '$' + p1);
             }
             
             const regex = new RegExp(searchPattern, 'g');
-            const matchCount = (markdown.match(regex) ||[]).length;
+            const matchCount = (markdown.match(regex) || []).length;
             
             if (matchCount === 0) {
                 showNotification("No matches found.", "error");
                 return;
             }
 
-            const newMd = markdown.replace(regex, finalReplaceText);
+            let newMd = markdown;
+            
+            if (matchMode === 'regex') {
+                // Raw regex mode supports standard $1 string replacement behavior
+                newMd = markdown.replace(regex, replaceText);
+            } else if (matchMode === 'smart') {
+                // Completely bypasses Javascript's built-in string '$1' parsing bugs
+                // by manually constructing the replacement string via a callback
+                newMd = markdown.replace(regex, (...args) => {
+                    let result = replaceText;
+                    let usageCount = { '{ANY}': 0, '{WORD}': 0, '{NUMBER}': 0 };
+                    
+                    // Replace {ANY}, {WORD}, {NUMBER} iteratively
+                    result = result.replace(/\\{(ANY|WORD|NUMBER)\\}/g, (match) => {
+                        let occurrence = 0;
+                        for (let i = 0; i < wildcards.length; i++) {
+                            if (wildcards[i] === match) {
+                                if (occurrence === usageCount[match]) {
+                                    usageCount[match]++;
+                                    return args[i + 1] !== undefined ? args[i + 1] : match;
+                                }
+                                occurrence++;
+                            }
+                        }
+                        return match;
+                    });
+                    
+                    // Replace exact index wildcards like {1}, {2}
+                    result = result.replace(/\\{(\\d+)\\}/g, (match, p1) => {
+                        let index = parseInt(p1, 10);
+                        return args[index] !== undefined ? args[index] : match;
+                    });
+
+                    return result;
+                });
+            }
+
             setMarkdown(newMd);
-            showNotification(\`Replaced \${matchCount} occurrence(s).\`);
+            showNotification("Replaced " + matchCount + " occurrence(s).");
         } catch(e) {
+            console.error(e);
             showNotification("Invalid pattern.", "error");
         }
     };
-
 
     // --- Drag & Resize Logic ---
     const startDrag = (e) => {
@@ -397,9 +455,9 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         const rect = containerRef.current.getBoundingClientRect();
-        const isMobile = window.innerWidth < 768;
 
-        if (isMobile) {
+        // Responsive split logic dependent on container state
+        if (isCompact) {
             let ratio = ((clientY - rect.top) / rect.height) * 100;
             if (ratio < 10) { stopDrag(); setViewMode('preview'); setSplitRatio(50); return; }
             if (ratio > 90) { stopDrag(); setViewMode('edit'); setSplitRatio(50); return; }
@@ -423,7 +481,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             window.removeEventListener('touchmove', onDrag);
             window.removeEventListener('touchend', stopDrag);
         };
-    },[]);
+    }, [isCompact]);
 
     // --- Exporters ---
     const getCleanFilename = (extension) => {
@@ -457,37 +515,30 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     const exportPDF = () => {
         if (!previewRef.current) return;
         
-        const printContainer = document.createElement('div');
-        printContainer.id = 'temp-print-container';
-        printContainer.innerHTML = '<div class="markdown-body">' + previewRef.current.innerHTML + '</div>';
-        document.body.appendChild(printContainer);
-
-        const printStyle = document.createElement('style');
-        printStyle.id = 'temp-print-style';
+        const node = previewRef.current;
+        const parent = node.parentNode;
+        const placeholder = document.createElement('div');
         
-        printStyle.innerHTML = 
-            '@media screen { ' +
-            '  #temp-print-container { display: none !important; } ' +
-            '} ' +
-            '@media print { ' +
-            '  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; } ' +
-            '  body > *:not(#temp-print-container) { display: none !important; } ' +
-            '  #temp-print-container { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; background: white !important; color: black !important; padding: 15mm !important; box-sizing: border-box !important; } ' +
-            '  .code-copy-btn, .toggle-icon { display: none !important; } ' +
-            '  .code-content { display: block !important; } ' + // Force expand code blocks on print
-            '  .code-header-sticky { position: static !important; border-bottom: 1px solid #475569 !important; } ' +
-            '  .code-block-wrapper { page-break-inside: avoid; break-inside: avoid; margin-bottom: 24px; } ' +
-            '  pre { margin-top: 0 !important; page-break-inside: avoid; break-inside: avoid; } ' +
-            '  @page { margin: 0mm; size: auto; } ' +
-            '}';
-            
+        // 1. Swap with placeholder and lift directly to body
+        parent.replaceChild(placeholder, node);
+        document.body.appendChild(node);
+        node.classList.add('md-native-print-target');
+        
+        // 2. Add print-isolation styles ensuring perfect WYSIWYG printing
+        const printStyle = document.createElement('style');
+        printStyle.innerHTML = " .md-native-print-target { position: absolute; top: 0; left: 0; width: 100vw; min-height: 100vh; background: white; z-index: 999999; padding: 40px; box-sizing: border-box; } @media print { body > *:not(.md-native-print-target) { display: none !important; } .md-native-print-target { position: static; width: auto; min-height: auto; padding: 0; } .code-copy-btn, .toggle-icon { display: none !important; } .code-content { display: block !important; } } ";
         document.head.appendChild(printStyle);
 
+        // 3. Trigger Print (Blocks thread while dialog is open)
         setTimeout(() => {
             window.print();
-            document.body.removeChild(printContainer);
+            
+            // 4. Cleanup and restore instantly
+            node.classList.remove('md-native-print-target');
+            document.body.removeChild(node);
+            parent.replaceChild(node, placeholder);
             document.head.removeChild(printStyle);
-        }, 150); 
+        }, 100); 
     };
 
     const exportDOCX = async () => {
@@ -640,19 +691,19 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             <header className="bg-white border-b border-slate-200 shadow-sm px-3 py-1 flex flex-row items-center justify-between gap-3 no-print z-10 flex-shrink-0 overflow-x-auto whitespace-nowrap">
                 <div className="flex bg-slate-100 p-0.5 rounded-md border border-slate-200 flex-shrink-0">
                     <button onClick={() => {setViewMode('edit'); setSplitRatio(50);}} className={'flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium transition-colors ' + (viewMode === 'edit' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
-                        <i className="fa-solid fa-pen"></i> <span>Edit</span>
+                        <i className="fa-solid fa-pen"></i> {!isCompact && <span>Edit</span>}
                     </button>
                     <button onClick={() => {setViewMode('split'); setSplitRatio(50);}} className={'flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium transition-colors ' + (viewMode === 'split' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
-                        <i className="fa-solid fa-columns"></i> <span>Split</span>
+                        <i className="fa-solid fa-columns"></i> {!isCompact && <span>Split</span>}
                     </button>
                     <button onClick={() => {setViewMode('preview'); setSplitRatio(50);}} className={'flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium transition-colors ' + (viewMode === 'preview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
-                        <i className="fa-solid fa-eye"></i> <span>Preview</span>
+                        <i className="fa-solid fa-eye"></i> {!isCompact && <span>Preview</span>}
                     </button>
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button onClick={() => setShowFindReplace(!showFindReplace)} className={\`flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded transition-colors \${showFindReplace ? 'bg-blue-100 text-blue-700' : 'text-slate-700 bg-white border border-slate-300 hover:bg-slate-50'}\`}>
-                        <i className="fa-solid fa-magnifying-glass"></i> <span className="hidden sm:inline">Find/Replace</span>
+                        <i className="fa-solid fa-magnifying-glass"></i> {!isCompact && <span>Find/Replace</span>}
                     </button>
                     
                     <div className="h-4 w-px bg-slate-300 mx-0.5"></div>
@@ -666,7 +717,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                     }} className="hidden" />
                     
                     <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50">
-                        <i className="fa-solid fa-upload"></i> <span className="hidden sm:inline">Import</span>
+                        <i className="fa-solid fa-upload"></i> {!isCompact && <span>Import</span>}
                     </button>
 
                     <button onClick={exportMD} className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50">
@@ -690,7 +741,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                 </div>
             )}
 
-            <main ref={containerRef} className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 min-w-0 relative">
+            <main ref={containerRef} className={\`flex-1 flex \${isCompact ? 'flex-col' : 'flex-row'} overflow-hidden min-h-0 min-w-0 relative\`}>
                 
                 <div 
                     id="editor-pane" 
@@ -733,9 +784,9 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
                             />
                             
                             <div className="text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-200 leading-relaxed">
-                                {matchMode === 'exact' && "Finds the exact text you type."}
-                                {matchMode === 'smart' && <><b>Smart Match:</b> Use <code>{'{NUMBER}'}</code>, <code>{'{WORD}'}</code>, or <code>{'{ANY}'}</code> as wildcards.<br/>Ex: <code>[cite: {'{NUMBER}'}]</code> finds <code>[cite: 12]</code>.<br/>Use <code>{'{1}'}</code>, <code>{'{2}'}</code> in Replace to insert matched wildcards.</>}
-                                {matchMode === 'regex' && <><b>Regex:</b> <code>\\d+</code> (numbers), <code>\\w+</code> (words), <code>(.*?)</code> (capture anything). Use <code>$1</code> to replace.</>}
+                                {matchMode === 'exact' && "Finds the exact text you type, including brackets like ($O(1)$)."}
+                                {matchMode === 'smart' && <><b>Smart Match:</b> Use <code>{'{NUMBER}'}</code>, <code>{'{WORD}'}</code>, or <code>{'{ANY}'}</code> as wildcards.<br/>Ex: <code></code> finds <code></code>.<br/>You can use <code>{'{ANY}'}</code> or <code>{'{1}'}</code> in Replace to insert the matched text!</>}
+                                {matchMode === 'regex' && <><b>Regex:</b> <code>\d+</code> (numbers), <code>\w+</code> (words), <code>(.*?)</code> (capture anything). Use <code>$1</code> to replace.</>}
                             </div>
                             
                             <div className="flex items-center justify-end mt-1">
@@ -760,11 +811,11 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
 
                 {viewMode === 'split' && (
                     <div 
-                        className="drag-handle flex-none bg-slate-200 hover:bg-blue-400 w-full h-3 md:w-2 md:h-full transition-colors z-20 flex items-center justify-center cursor-row-resize md:cursor-col-resize active:bg-blue-500"
+                        className={\`drag-handle flex-none bg-slate-200 hover:bg-blue-400 transition-colors z-20 flex items-center justify-center \${isCompact ? 'w-full h-3 cursor-row-resize' : 'w-2 h-full cursor-col-resize'}\`}
                         onMouseDown={startDrag}
                         onTouchStart={startDrag}
                     >
-                        <div className="bg-slate-400 rounded-full w-8 h-1 md:w-1 md:h-8 pointer-events-none"></div>
+                        <div className={\`bg-slate-400 rounded-full pointer-events-none \${isCompact ? 'w-8 h-1' : 'w-1 h-8'}\`}></div>
                     </div>
                 )}
 
