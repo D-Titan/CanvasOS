@@ -51,6 +51,13 @@ window.AppRegistry = [
         iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></svg>`,
         scriptPath: 'apps/Boards.js'
     },
+    {
+    id: 'FileShare',
+    name: 'AirShare',
+    hidden: false,
+    iconSvg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1"/><polyline points="16 10 12 6 8 10"/><line x1="12" y1="6" x2="12" y2="15"/></svg>`,
+    scriptPath: 'apps/FileShare.js'
+    },
         {
         id: 'MediaEditor',
         name: 'Media Editor',
