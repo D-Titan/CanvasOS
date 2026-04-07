@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebDrop - P2P File Sharing</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel for in-browser JSX compilation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
+    
+    <!-- Tailwind CSS for Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Pako for Gzip Compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    
+    <!-- Swapped to QRious for ultra-reliable QR generation & updated Scanner CDN -->
+    <script src="https://unpkg.com/qrious@4.0.2/dist/qrious.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Utility Functions ---
+        
+        const compressSDP = (sdp) => {
+            const str = JSON.stringify(sdp);
+            const uint8 = new TextEncoder().encode(str);
+            const compressed = pako.deflate(uint8);
+            
+            let binary = '';
+            for (let i = 0; i < compressed.byteLength; i++) {
+                binary += String.fromCharCode(compressed[i]);
+            }
+            return btoa(binary);
+        };
+
+        const decompressSDP = (b64) => {
+            const str = atob(b64);
+            const arr = new Uint8Array(str.length);
+            for (let i = 0; i < str.length; i++) arr[i] = str.charCodeAt(i);
+            const decompressed = pako.inflate(arr);
+            return JSON.parse(new TextDecoder().decode(decompressed));
+        };
+
+        const gatherIce = (pc) => {
+            return new Promise((resolve) => {
+                if (pc.iceGatheringState === 'complete') return resolve();
+                
+                let timeout = null;
+                const checkState = () => {
+                    if (pc.iceGatheringState === 'complete') {
+                        pc.removeEventListener('icegatheringstatechange', checkState);
+                        clearTimeout(timeout);
+                        resolve();
+                    }
+                };
+                pc.addEventListener('icegatheringstatechange', checkState);
+
+                pc.onicecandidate = (event) => {
+                    if (event.candidate === null) {
+                        clearTimeout(timeout);
+                        resolve();
+                    } else if (!timeout) {
+                        timeout = setTimeout(() => {
+                            pc.removeEventListener('icegatheringstatechange', checkState);
+                            resolve();
+                        }, 1500); 
+                    }
+                };
+            });
+        };
+
+        // --- Components ---
+
+        const QRCodeDisplay = ({ data }) => {
+            const canvasRef = useRef(null);
+            
+            useEffect(() => {
+                if (canvasRef.current && data) {
+                    // Using QRious: reliable, zero-dependency canvas drawing
+                    if (typeof QRious !== 'undefined') {
+                        new QRious({
+                            element: canvasRef.current,
+                            value: data,
+                            size: 250,
+                            level: 'L' // Low error correction to allow denser data strings
+                        });
+                    } else {
+                        // Render a fallback error message only if absolutely nothing works
+                        const ctx = canvasRef.current.getContext('2d');
+                        canvasRef.current.width = 250;
+                        canvasRef.current.height = 250;
+                        ctx.fillStyle = '#fef2f2'; 
+                        ctx.fillRect(0, 0, 250, 250);
+                        ctx.fillStyle = '#ef4444'; 
+                        ctx.font = '14px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('QR Lib Blocked.', 125, 110);
+                        ctx.fillText('Use text below.', 125, 135);
+                    }
+                }
+            }, [data]);
+
+            const copyCode = () => {
+                try {
+                    navigator.clipboard.writeText(data).catch(() => alert("Copy failed. Try manual selection."));
+                } catch (err) {
+                    alert("Copy failed. Try manual selection.");
+                }
+            };
+
+            return (
+                <div className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                    <canvas ref={canvasRef} className="rounded-lg mb-4"></canvas>
+                    <div className="w-full relative">
+                        <textarea 
+                            readOnly 
+                            value={data} 
+                            className="w-full text-xs text-gray-400 bg-gray-50 p-2 rounded border hide-scrollbar h-16 resize-none"
+                            onClick={(e) => e.target.select()}
+                        />
+                        <button 
+                            type="button"
+                            onClick={copyCode}
+                            className="absolute top-2 right-2 bg-white text-blue-600 shadow px-2 py-1 text-xs rounded font-medium hover:bg-gray-50"
+                        >
+                            Copy Text
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const Scanner = ({ onScan, onClose }) => {
+            const onScanRef = useRef(onScan);
+            useEffect(() => {
+                onScanRef.current = onScan;
+            }, [onScan]);
+
+            useEffect(() => {
+                let scanner = null;
+                let isScanning = true;
+
+                const timer = setTimeout(() => {
+                    try {
+                        if (typeof Html5QrcodeScanner === 'undefined') {
+                            document.getElementById("reader").innerHTML = "<div class='p-8 text-red-500 text-sm text-center font-medium bg-red-50'>Camera scanner library failed to load.<br/><br/>Please paste the code manually below.</div>";
+                            return;
+                        }
+
+                        scanner = new Html5QrcodeScanner("reader", { 
+                            fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 
+                        }, false);
+
+                        scanner.render((text) => {
+                            if (isScanning) {
+                                isScanning = false;
+                                scanner.clear().catch(console.error).finally(() => {
+                                    onScanRef.current(text);
+                                });
+                            }
+                        }, (err) => { /* Ignore periodic scanning errors */ });
+                    } catch (e) {
+                        console.error("Scanner failed to start", e);
+                    }
+                }, 100);
+
+                return () => { 
+                    clearTimeout(timer);
+                    if (scanner && isScanning) {
+                        isScanning = false;
+                        try {
+                            scanner.clear().catch(console.error);
+                        } catch (e) {}
+                    }
+                };
+            }, []);
+
+            return (
+                <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md relative shadow-2xl">
+                        <div className="p-4 bg-gray-50 flex justify-between items-center border-b">
+                            <h3 className="font-bold text-gray-800">Scan QR Code</h3>
+                            <button type="button" onClick={onClose} className="text-gray-500 hover:text-red-500 font-bold p-1">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <div id="reader" className="w-full bg-black min-h-[250px] flex items-center justify-center"></div>
+                        <div className="p-4 bg-gray-50 text-sm text-center text-gray-500">
+                            Or paste connection text below:
+                            <input 
+                                type="text" 
+                                placeholder="Paste connection string..." 
+                                className="w-full mt-2 p-2 border rounded text-xs"
+                                onPaste={(e) => {
+                                    e.preventDefault();
+                                    const text = e.clipboardData.getData('text');
+                                    onScanRef.current(text);
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const [role, setRole] = useState(null); 
+            const [pc, setPc] = useState(null);
+            const [dc, setDc] = useState(null);
+            const [localCode, setLocalCode] = useState('');
+            const [isConnected, setIsConnected] = useState(false);
+            const [showScanner, setShowScanner] = useState(false);
+            const [useInternet, setUseInternet] = useState(true);
+
+            const [selectedFile, setSelectedFile] = useState(null);
+            const [progress, setProgress] = useState(0);
+            const [status, setStatus] = useState('');
+
+            useEffect(() => {
+                return () => {
+                    if (pc) pc.close();
+                };
+            }, [role, pc]);
+
+            const getIceServers = () => {
+                return useInternet ? [{ urls: 'stun:stun.l.google.com:19302' }] : [];
+            };
+
+            const setupDataChannel = (channel) => {
+                channel.binaryType = 'arraybuffer';
+                channel.bufferedAmountLowThreshold = 65536; 
+
+                channel.onopen = () => setIsConnected(true);
+                channel.onclose = () => {
+                    setIsConnected(false);
+                    setStatus('Connection lost.');
+                };
+
+                let receiveBuffer = [];
+                let receivedSize = 0;
+                let expectedMeta = null;
+
+                channel.onmessage = (e) => {
+                    if (typeof e.data === 'string') {
+                        const msg = JSON.parse(e.data);
+                        if (msg.type === 'meta') {
+                            expectedMeta = msg;
+                            receiveBuffer = [];
+                            receivedSize = 0;
+                            setStatus(`Receiving: ${msg.name}...`);
+                            setProgress(0);
+                        } else if (msg.type === 'eof') {
+                            const blob = new Blob(receiveBuffer, { type: expectedMeta.mimeType });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = expectedMeta.name;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            receiveBuffer = [];
+                            setStatus('Download Complete!');
+                            setProgress(100);
+                        }
+                    } else {
+                        receiveBuffer.push(e.data);
+                        receivedSize += e.data.byteLength;
+                        if (expectedMeta) {
+                            setProgress((receivedSize / expectedMeta.size) * 100);
+                        }
+                    }
+                };
+            };
+
+            const handleHostSetup = async () => {
+                try {
+                    setRole('sender');
+                    setStatus('Generating connection code...');
+                    const peer = new RTCPeerConnection({ iceServers: getIceServers() });
+                    const channel = peer.createDataChannel('fileTransfer');
+                    setupDataChannel(channel);
+                    setPc(peer);
+                    setDc(channel);
+
+                    const offer = await peer.createOffer();
+                    await peer.setLocalDescription(offer);
+                    await gatherIce(peer);
+
+                    setLocalCode(compressSDP(peer.localDescription));
+                    setStatus('Waiting for Guest...');
+                } catch (err) {
+                    console.error(err);
+                    alert("Error starting host setup. Please try again.");
+                    resetApp();
+                }
+            };
+
+            const handleJoinSetup = () => {
+                try {
+                    setRole('receiver');
+                    setShowScanner(true);
+                } catch (err) {
+                    console.error(err);
+                    alert("Error opening scanner.");
+                    resetApp();
+                }
+            };
+
+            const handleScan = async (scannedText) => {
+                if (!scannedText) return;
+                setShowScanner(false);
+                try {
+                    const desc = decompressSDP(scannedText);
+
+                    if (role === 'receiver') {
+                        setStatus('Connecting to Host...');
+                        const peer = new RTCPeerConnection({ iceServers: getIceServers() });
+                        peer.ondatachannel = (e) => {
+                            setupDataChannel(e.channel);
+                            setDc(e.channel);
+                        };
+                        setPc(peer);
+
+                        await peer.setRemoteDescription(desc);
+                        const answer = await peer.createAnswer();
+                        await peer.setLocalDescription(answer);
+                        await gatherIce(peer);
+
+                        setLocalCode(compressSDP(peer.localDescription));
+                        setStatus('Host needs to scan your Answer Code.');
+                    } else if (role === 'sender') {
+                        setStatus('Establishing connection...');
+                        await pc.setRemoteDescription(desc);
+                    }
+                } catch (e) {
+                    alert("Invalid connection code or signal failed. Please try again.");
+                    setStatus('Setup failed.');
+                }
+            };
+
+            const sendFile = () => {
+                if (!selectedFile || !dc) return;
+                setStatus(`Sending ${selectedFile.name}...`);
+                setProgress(0);
+
+                const CHUNK_SIZE = 64 * 1024; 
+                let offset = 0;
+                const fileReader = new FileReader();
+
+                dc.send(JSON.stringify({
+                    type: 'meta',
+                    name: selectedFile.name,
+                    size: selectedFile.size,
+                    mimeType: selectedFile.type
+                }));
+
+                const readSlice = (o) => {
+                    const slice = selectedFile.slice(o, o + CHUNK_SIZE);
+                    fileReader.readAsArrayBuffer(slice);
+                };
+
+                fileReader.onload = (e) => {
+                    dc.send(e.target.result);
+                    offset += e.target.result.byteLength;
+                    setProgress((offset / selectedFile.size) * 100);
+
+                    if (offset < selectedFile.size) {
+                        if (dc.bufferedAmount > dc.bufferedAmountLowThreshold) {
+                            dc.onbufferedamountlow = () => {
+                                dc.onbufferedamountlow = null;
+                                readSlice(offset);
+                            };
+                        } else {
+                            readSlice(offset);
+                        }
+                    } else {
+                        dc.send(JSON.stringify({ type: 'eof' }));
+                        setStatus('File Sent Successfully!');
+                    }
+                };
+
+                readSlice(0);
+            };
+
+            const resetApp = () => {
+                if (pc) pc.close();
+                setRole(null);
+                setPc(null);
+                setDc(null);
+                setLocalCode('');
+                setIsConnected(false);
+                setSelectedFile(null);
+                setProgress(0);
+                setStatus('');
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center p-4">
+                    <div className="bg-white max-w-md w-full rounded-3xl shadow-xl overflow-hidden">
+                        
+                        <div className="bg-blue-600 p-6 text-white text-center rounded-b-[2.5rem] shadow-sm relative">
+                            {role && (
+                                <button type="button" onClick={resetApp} className="absolute top-6 left-6 text-blue-100 hover:text-white">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                                </button>
+                            )}
+                            <div className="flex justify-center mb-3">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19.5v-15h-11v15"/><path d="M5 21.5h14"/><path d="M9 7.5h6"/><path d="M12 11.5v4"/><path d="M10 13.5l2-2 2 2"/></svg>
+                            </div>
+                            <h1 className="text-2xl font-bold tracking-tight">WebDrop</h1>
+                            <p className="text-blue-100 text-sm mt-1 opacity-90">P2P Serverless Sharing</p>
+                        </div>
+
+                        <div className="p-6">
+                            {showScanner && <Scanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
+
+                            {!role && (
+                                <div className="space-y-4">
+                                    <button type="button" onClick={handleHostSetup} className="w-full flex items-center p-4 border-2 border-gray-100 hover:border-blue-500 rounded-2xl transition-colors group">
+                                        <div className="bg-blue-100 p-3 rounded-full text-blue-600 mr-4 group-hover:scale-110 transition-transform">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                        </div>
+                                        <div className="text-left">
+                                            <h3 className="font-semibold text-gray-800 text-lg">Send Files</h3>
+                                            <p className="text-gray-500 text-sm mt-0.5">Host connection & share</p>
+                                        </div>
+                                    </button>
+
+                                    <button type="button" onClick={handleJoinSetup} className="w-full flex items-center p-4 border-2 border-gray-100 hover:border-green-500 rounded-2xl transition-colors group">
+                                        <div className="bg-green-100 p-3 rounded-full text-green-600 mr-4 group-hover:scale-110 transition-transform">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                        </div>
+                                        <div className="text-left">
+                                            <h3 className="font-semibold text-gray-800 text-lg">Receive Files</h3>
+                                            <p className="text-gray-500 text-sm mt-0.5">Scan host QR to connect</p>
+                                        </div>
+                                    </button>
+                                    
+                                    <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between px-2">
+                                        <div className="text-sm">
+                                            <p className="font-medium text-gray-700">Internet Routing</p>
+                                            <p className="text-xs text-gray-400">Turn off for offline local network</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only peer" checked={useInternet} onChange={(e) => setUseInternet(e.target.checked)} />
+                                            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
+
+                            {role && !isConnected && (
+                                <div className="space-y-6 text-center animate-fade-in">
+                                    <div className="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold uppercase tracking-wide">
+                                        {role === 'sender' ? 'Step 1: Host' : 'Step 2: Guest'}
+                                    </div>
+                                    
+                                    {localCode ? (
+                                        <div className="space-y-4">
+                                            <p className="text-sm font-medium text-gray-600">
+                                                {role === 'sender' ? 'Have Guest scan this code:' : 'Have Host scan your reply:'}
+                                            </p>
+                                            <QRCodeDisplay data={localCode} />
+                                            
+                                            {role === 'sender' && (
+                                                <button type="button" onClick={() => setShowScanner(true)} className="w-full py-3 px-4 bg-gray-900 hover:bg-black text-white rounded-xl font-medium shadow-md transition-colors flex items-center justify-center">
+                                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                                    Scan Guest's Reply
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="py-12 flex flex-col items-center">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                                            <p className="text-gray-500">{status || 'Processing...'}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {isConnected && (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="bg-green-50 text-green-700 p-3 rounded-lg flex items-center justify-center text-sm font-medium border border-green-200">
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                        Devices Connected Directly
+                                    </div>
+
+                                    {role === 'sender' ? (
+                                        <div className="space-y-4">
+                                            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                    <svg className="w-10 h-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                                    <p className="mb-2 text-sm text-gray-500 font-medium">Click to select file</p>
+                                                    <p className="text-xs text-gray-400 px-4 text-center">Transfer goes directly to the guest without any limits.</p>
+                                                </div>
+                                                <input type="file" className="hidden" onChange={(e) => setSelectedFile(e.target.files[0])} />
+                                            </label>
+
+                                            {selectedFile && (
+                                                <div className="bg-gray-50 border rounded-xl p-3 flex justify-between items-center">
+                                                    <div className="overflow-hidden">
+                                                        <p className="text-sm font-medium text-gray-700 truncate">{selectedFile.name}</p>
+                                                        <p className="text-xs text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                    </div>
+                                                    <button type="button" onClick={sendFile} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-blue-700 transition">
+                                                        Send
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-40 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl">
+                                            <div className="animate-pulse flex flex-col items-center">
+                                                <svg className="w-10 h-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                                                <p className="text-sm text-gray-500 font-medium">Waiting for incoming files...</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(progress > 0 || status) && (
+                                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                                            <p className="text-xs font-medium text-gray-500 mb-2">{status}</p>
+                                            <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                                <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-200 ease-out" style={{ width: `${progress}%` }}></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                    
+                    <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[100px] -z-10"></div>
+                    <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-green-400/20 blur-[100px] -z-10"></div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
