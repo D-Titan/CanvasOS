@@ -312,16 +312,16 @@ const BoardApp = ({ data, onUpdate, isExporting }) => {
     const deleteGroup = (groupId) => {
         const newGroups = boardData.groups.filter(g => g.id !== groupId);
         
+        // Permanently delete all tasks assigned to the deleted group
+        const newCols = boardData.columns.map(c => ({
+            ...c,
+            items: c.items.filter(i => i.groupId !== groupId)
+        }));
+        
         if (newGroups.length === 0) {
-            // Turning off group mode entirely
-            const newCols = boardData.columns.map(c => ({
-                ...c, items: c.items.map(i => ({ ...i, groupId: null }))
-            }));
+            // Turn off group mode if no groups remain
             setBoardData({ ...boardData, groups: [], columns: newCols, useGroups: false });
         } else {
-            // Transfer tasks to the first available remaining group
-            const fallbackId = newGroups[0].id;
-            const newCols = boardData.columns.map(c => ({ ...c, items: c.items.map(i => i.groupId === groupId ? { ...i, groupId: fallbackId } : i) }));
             setBoardData({ ...boardData, groups: newGroups, columns: newCols });
         }
     };
@@ -498,7 +498,7 @@ const BoardApp = ({ data, onUpdate, isExporting }) => {
                                                             <div key={group.id} className={"flex flex-col rounded-xl border border-transparent transition-colors " + (cIdx === 0 ? 'bg-white/60 dark:bg-zinc-800/50 p-1.5' : '')} onDragOver={onDragOverKanban} onDrop={(e) => onDropKanban(e, cIdx, group.id)}>
                                                                 
                                                                 <div className="flex items-center justify-between mb-2 px-1 group/header relative">
-                                                                    <div className="flex items-center gap-1.5 overflow-hidden">
+                                                                    <div className="flex items-center gap-1.5 overflow-hidden flex-1">
                                                                         <button onClick={() => toggleCollapse(cIdx, group.id)} className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded shrink-0 transition-colors">
                                                                             {isCollapsed ? <Icons.ChevronRight className="w-4 h-4"/> : <Icons.ChevronDown className="w-4 h-4"/>}
                                                                         </button>
@@ -510,14 +510,14 @@ const BoardApp = ({ data, onUpdate, isExporting }) => {
                                                                         )}
                                                                     </div>
                                                                     
-                                                                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                                                                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
                                                                         {cIdx === 0 && (
-                                                                            <div className="hidden group-hover/header:flex absolute right-8 top-0 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 p-1.5 rounded-lg shadow-xl z-20 items-center gap-1.5 flex-wrap w-24 animate-slide-up">
+                                                                            <div className="hidden group-hover/header:flex items-center gap-1">
                                                                                 {GROUP_COLORS.map(c => (
-                                                                                    <button key={c} onClick={() => updateGroup(group.id, { color: c })} className={"w-4 h-4 rounded-full hover:scale-125 transition-transform shadow-sm " + c}></button>
+                                                                                    <button key={c} onClick={() => updateGroup(group.id, { color: c })} className={"w-2.5 h-2.5 rounded-full hover:scale-125 transition-transform shadow-sm " + c}></button>
                                                                                 ))}
-                                                                                <div className="w-px h-4 bg-slate-200 dark:bg-zinc-600 mx-1"></div>
-                                                                                <button onClick={() => deleteGroup(group.id)} className="text-slate-400 hover:text-red-500"><Icons.Trash className="w-4 h-4"/></button>
+                                                                                <div className="w-px h-3 bg-slate-300 dark:bg-zinc-600 mx-0.5"></div>
+                                                                                <button onClick={() => deleteGroup(group.id)} className="text-slate-400 hover:text-red-500"><Icons.Trash className="w-3.5 h-3.5"/></button>
                                                                             </div>
                                                                         )}
                                                                         <span className="bg-slate-200 dark:bg-zinc-700 text-slate-500 dark:text-zinc-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{groupItems.length}</span>
