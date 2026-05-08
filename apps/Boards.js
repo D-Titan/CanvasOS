@@ -26,41 +26,42 @@ const Icons = {
     ArrowLeft: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>,
     ChevronLeft: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>,
     ChevronRight: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>,
+    ChevronDown: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>,
     Link: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
     Info: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
     Plus: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
     ZoomIn: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
     ZoomOut: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
+    Layers: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg>,
     Upload: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
 };
 
 const BOARD_TEMPLATES = {
-    kanban: { title: "Kanban Board", desc: "Manage workflow with columns.", defaultData: { type: 'kanban', columns: [{title: 'To Do', items: []}, {title: 'In Progress', items: []}, {title: 'Done', items: []}] } },
+    kanban: { title: "Kanban Board", desc: "Manage workflow with columns.", defaultData: { type: 'kanban', useGroups: false, groups: [], columns: [{title: 'To Do', items: []}, {title: 'In Progress', items: []}, {title: 'Done', items: []}] } },
     swot: { title: "SWOT Analysis", desc: "Strengths, Weaknesses, Opportunities, Threats.", defaultData: { type: 'grid', grid: [{title: 'Strengths', content: '1. ', color: 'bg-green-50 dark:bg-green-900/20'}, {title: 'Weaknesses', content: '1. ', color: 'bg-red-50 dark:bg-red-900/20'}, {title: 'Opportunities', content: '1. ', color: 'bg-blue-50 dark:bg-blue-900/20'}, {title: 'Threats', content: '1. ', color: 'bg-amber-50 dark:bg-amber-900/20'}] } },
     eisenhower: { title: "Eisenhower Matrix", desc: "Urgent vs Important task prioritization.", defaultData: { type: 'grid', grid: [{title: 'Urgent & Important', content: '1. ', color: 'bg-red-50 dark:bg-red-900/20'}, {title: 'Not Urgent & Important', content: '1. ', color: 'bg-blue-50 dark:bg-blue-900/20'}, {title: 'Urgent & Not Important', content: '1. ', color: 'bg-amber-50 dark:bg-amber-900/20'}, {title: 'Not Urgent & Not Important', content: '1. ', color: 'bg-green-50 dark:bg-green-900/20'}] } },
     mindmap: { title: "Mind Map", desc: "Visual idea structuring.", defaultData: { type: 'graph', nodes: [{ id: 'root', x: 300, y: 200, text: 'Central Idea', color: 'bg-white' }], edges: [] } },
     sipoc: { title: "SIPOC Diagram", desc: "Suppliers, Inputs, Process, Outputs, Customers.", defaultData: { type: 'table', columns: ['Suppliers', 'Inputs', 'Process', 'Outputs', 'Customers'], rows: [['', '', '', '', '']] } },
-    rule10: { title: "10-10-10 Rule", desc: "Decisions in 10 min, 10 months, 10 years.", defaultData: { type: 'grid', cols: 3, grid: [{title: '10 Minutes', content: '1. ', color: 'bg-slate-50'}, {title: '10 Months', content: '1. ', color: 'bg-slate-50'}, {title: '10 Years', content: '1. ', color: 'bg-slate-50'}] } },
-    scrum: { title: "Scrum Board", desc: "Sprint backlog and tracking.", defaultData: { type: 'kanban', columns: [{title: 'Backlog', items: []}, {title: 'Sprint', items: []}, {title: 'In Progress', items: []}, {title: 'Testing', items: []}, {title: 'Done', items: []}] } },
+    rule10: { title: "10-10-10 Rule", desc: "Decisions in 10 min, 10 months, 10 years.", defaultData: { type: 'grid', cols: 3, grid: [{title: '10 Minutes', content: '1. ', color: 'bg-slate-50 dark:bg-slate-800'}, {title: '10 Months', content: '1. ', color: 'bg-slate-50 dark:bg-slate-800'}, {title: '10 Years', content: '1. ', color: 'bg-slate-50 dark:bg-slate-800'}] } },
+    scrum: { title: "Scrum Board", desc: "Sprint backlog and tracking.", defaultData: { type: 'kanban', useGroups: true, groups: [{ id: 'g1', title: 'Sprint 1', color: 'bg-blue-100', isCollapsed: false }], columns: [{title: 'Backlog', items: []}, {title: 'Sprint', items: []}, {title: 'In Progress', items: []}, {title: 'Testing', items: []}, {title: 'Done', items: []}] } },
     pert: { title: "PERT Chart", desc: "Program Evaluation and Review Technique node map.", defaultData: { type: 'graph', subType: 'pert', nodes: [{ id: 'start', x: 100, y: 200, text: 'Start', color: 'bg-green-100' }, { id: 'end', x: 500, y: 200, text: 'End', color: 'bg-red-100' }], edges: [] } },
     risk: { title: "Risk Matrix", desc: "Likelihood vs Impact Assessment.", defaultData: { type: 'risk', cells: Array(25).fill('') } },
 };
 
 const INSTRUCTIONS = {
-    kanban: "Drag cards between columns. Use arrows on mobile. Click title to edit.",
-    scrum: "Agile workflow. Edit titles, drag cards, add columns via hover.",
+    kanban: "Drag cards between columns. Use arrows on mobile. Click title to edit. Toggle groups for swimlanes.",
+    scrum: "Agile workflow. Edit titles, drag cards, add columns via hover. Toggle groups to separate features.",
     swot: "Analyze Strengths, Weaknesses, Opportunities, and Threats. Auto-numbered lists.",
     eisenhower: "Prioritize based on Urgency and Importance. Auto-numbered lists.",
-    mindmap: "Double click background to add nodes. Tap/Click a node to reveal connection port. Drag port to connect. Select edge/node and press 'Delete' or use toolbar to remove.",
+    mindmap: "Double click background to add nodes. Tap/Click a node to reveal connection port. Drag port to connect.",
     pert: "Network diagram. Tap/Click node to reveal connection port. Drag port to connect. Select edge to edit value.",
     sipoc: "Table for process mapping. Click 'Generate Flow' to see a visual chart of the Process column.",
     risk: "Visualise risk (Impact vs Likelihood). Click cells to add risks.",
     rule10: "Decision making framework: 10 minutes, 10 months, 10 years.",
 };
 
-// Converted to pure standard string concatenation
 const APP_STYLES = 
-    ".prod-board-app { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; } " +
+    ".prod-board-app { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; } " +
     ".prod-board-app .bg-grid-pattern { background-image: linear-gradient(to right, rgba(148, 163, 184, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.15) 1px, transparent 1px); background-size: 24px 24px; } " +
     "@media screen and (max-width: 767px) { .prod-board-app input, .prod-board-app select, .prod-board-app textarea, .prod-board-app .editable-div { font-size: 16px !important; } } " +
     ".prod-board-app .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; } " +
@@ -73,7 +74,7 @@ const InfoButton = ({ text }) => {
     const [show, setShow] = useState(false);
     return (
         <div className="relative z-50">
-            <button onClick={() => setShow(!show)} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-blue-500 hover:bg-slate-300 shadow-md transition-colors border border-slate-300 dark:border-slate-600">
+            <button onClick={() => setShow(!show)} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:bg-slate-50 shadow-md transition-colors border border-slate-200 dark:border-slate-700">
                 <Icons.Info className="w-5 h-5" />
             </button>
             {show && (
@@ -123,48 +124,32 @@ const GraphEditor = ({ data, onUpdate }) => {
     useEffect(() => { onUpdate({ nodes, edges }); }, [nodes, edges]);
 
     const deleteSelected = useCallback(() => {
-        if (selectedEdge !== null) { 
-            setEdges(es => es.filter((_, i) => i !== selectedEdge)); 
-            setSelectedEdge(null); 
-        }
-        if (selected.size > 0) { 
-            setNodes(ns => ns.filter(n => !selected.has(n.id))); 
-            setEdges(es => es.filter(e => !selected.has(e.from) && !selected.has(e.to))); 
-            setSelected(new Set()); 
-        }
+        if (selectedEdge !== null) { setEdges(es => es.filter((_, i) => i !== selectedEdge)); setSelectedEdge(null); }
+        if (selected.size > 0) { setNodes(ns => ns.filter(n => !selected.has(n.id))); setEdges(es => es.filter(e => !selected.has(e.from) && !selected.has(e.to))); setSelected(new Set()); }
     }, [selected, selectedEdge]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName) || document.activeElement?.isContentEditable) return;
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                 deleteSelected();
-            }
+            if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
         };
         window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown);
     }, [deleteSelected]);
 
     const getMousePos = (e) => { 
         const rect = containerRef.current.getBoundingClientRect(); 
-        let clientX, clientY;
-        if (e.touches && e.touches.length > 0) {
-            clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
-        } else if (e.changedTouches && e.changedTouches.length > 0) {
-            clientX = e.changedTouches[0].clientX; clientY = e.changedTouches[0].clientY;
-        } else {
-            clientX = e.clientX; clientY = e.clientY;
-        }
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let clientY = e.touches ? e.touches[0].clientY : e.clientY;
         return { x: (clientX - rect.left - pan.x) / scale, y: (clientY - rect.top - pan.y) / scale }; 
     };
-    const handleWheel = (e) => { if (e.ctrlKey || e.metaKey || !e.shiftKey) { const s = Math.min(Math.max(0.2, scale - e.deltaY * 0.001), 3); setScale(s); } };
+    
+    const handleWheel = (e) => { if (e.ctrlKey || e.metaKey || !e.shiftKey) { setScale(Math.min(Math.max(0.2, scale - e.deltaY * 0.001), 3)); } };
     
     const handleMouseDown = (e, targetType, targetId) => {
         e.stopPropagation();
         if (e.code === 'Space' || (targetType === 'bg' && e.button === 1) || (e.touches && e.touches.length === 2)) { 
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY; 
-            setInteraction({ type: 'pan', startX: clientX, startY: clientY, initX: pan.x, initY: pan.y }); 
-            return; 
+            const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; 
+            setInteraction({ type: 'pan', startX: cx, startY: cy, initX: pan.x, initY: pan.y }); return; 
         }
         const { x, y } = getMousePos(e);
         if (targetType === 'bg') {
@@ -178,10 +163,8 @@ const GraphEditor = ({ data, onUpdate }) => {
     
     const handleMouseMove = (e) => {
         if (!interaction) return;
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX; 
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY; 
-
-        if (interaction.type === 'pan') { setPan({ x: interaction.initX + (clientX - interaction.startX), y: interaction.initY + (clientY - interaction.startY) }); return; }
+        const cx = e.touches ? e.touches[0].clientX : e.clientX; const cy = e.touches ? e.touches[0].clientY : e.clientY; 
+        if (interaction.type === 'pan') { setPan({ x: interaction.initX + (cx - interaction.startX), y: interaction.initY + (cy - interaction.startY) }); return; }
         const { x, y } = getMousePos(e);
         if (interaction.type === 'drag') {
             const dx = x - interaction.startX; const dy = y - interaction.startY;
@@ -190,8 +173,7 @@ const GraphEditor = ({ data, onUpdate }) => {
         } else if (interaction.type === 'box') {
             setInteraction({ ...interaction, currX: x, currY: y });
             const x1 = Math.min(interaction.startX, x); const x2 = Math.max(interaction.startX, x); const y1 = Math.min(interaction.startY, y); const y2 = Math.max(interaction.startY, y);
-            const newSelection = new Set(); nodes.forEach(n => { if (n.x + 80 > x1 && n.x < x2 && n.y + 30 > y1 && n.y < y2) newSelection.add(n.id); });
-            setSelected(newSelection);
+            const newSelection = new Set(); nodes.forEach(n => { if (n.x + 80 > x1 && n.x < x2 && n.y + 30 > y1 && n.y < y2) newSelection.add(n.id); }); setSelected(newSelection);
         } else if (interaction.type === 'connect') { setInteraction({ ...interaction, currX: x, currY: y }); }
     };
     
@@ -206,19 +188,14 @@ const GraphEditor = ({ data, onUpdate }) => {
     
     const addNode = (e) => { 
         const { x, y } = getMousePos(e); 
-        const newNode = { id: Math.random().toString(36).substr(2, 9), x: x - 64, y: y - 20, text: 'New Node', color: 'bg-white' }; 
-        setNodes([...nodes, newNode]); 
+        setNodes([...nodes, { id: Math.random().toString(36).substr(2, 9), x: x - 64, y: y - 20, text: 'New Node', color: 'bg-white' }]); 
     };
 
     return (
         <div className="w-full h-full relative overflow-hidden bg-slate-50 dark:bg-slate-900 select-none bg-grid-pattern">
              <div className="absolute top-2 left-2 z-20 flex gap-2"> 
                 <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded px-2 py-1 text-xs font-mono border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 pointer-events-none"> Zoom: {Math.round(scale * 100)}% </div> 
-                {hasSelection && (
-                    <button onClick={deleteSelected} className="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-1 text-xs shadow-sm flex items-center gap-1">
-                        <Icons.Trash className="w-3.5 h-3.5" /> Delete
-                    </button>
-                )}
+                {hasSelection && <button onClick={deleteSelected} className="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-1 text-xs shadow-sm flex items-center gap-1"><Icons.Trash className="w-3.5 h-3.5" /> Delete</button>}
              </div>
              
             <div ref={containerRef} className="w-full h-full cursor-crosshair touch-none" onWheel={handleWheel} onMouseDown={(e) => handleMouseDown(e, 'bg')} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onDoubleClick={addNode} onTouchStart={(e) => handleMouseDown(e, 'bg')} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}>
@@ -242,17 +219,9 @@ const GraphEditor = ({ data, onUpdate }) => {
                         return (
                         <div key={node.id} className={"absolute w-32 p-2 rounded-lg shadow-md border-2 cursor-move group " + node.color + " dark:bg-slate-800 text-slate-800 " + (isSelected ? "border-blue-500 ring-2 ring-blue-200" : "border-slate-300 dark:border-slate-600")} style={{ left: node.x, top: node.y }} onMouseDown={(e) => handleMouseDown(e, 'node', node.id)} onTouchStart={(e) => handleMouseDown(e, 'node', node.id)}>
                             <EditableDiv className="w-full text-center bg-transparent focus:outline-none text-sm font-medium text-slate-700 dark:text-slate-200 resize-none overflow-hidden" value={node.text} onChange={e => setNodes(nodes.map(n => n.id === node.id ? { ...n, text: e.target.value } : n))} minHeight={24} />
-                            
-                            {/* Connection Port - visible on hover OR when selected (for touch) */}
-                            <div className={"absolute top-1/2 -right-3 -translate-y-1/2 w-5 h-5 bg-slate-400 hover:bg-blue-500 rounded-full cursor-crosshair shadow-sm border-2 border-white dark:border-slate-800 z-20 flex items-center justify-center transition-opacity " + (isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")} onMouseDown={(e) => handleMouseDown(e, 'port', node.id)} onTouchStart={(e) => handleMouseDown(e, 'port', node.id)} title="Drag to connect"> 
-                                <Icons.Link className="w-3 h-3 text-white" /> 
-                            </div>
-                            
-                            {/* Color Pickers - visible on hover OR when selected (for touch) */}
+                            <div className={"absolute top-1/2 -right-3 -translate-y-1/2 w-5 h-5 bg-slate-400 hover:bg-blue-500 rounded-full cursor-crosshair shadow-sm border-2 border-white dark:border-slate-800 z-20 flex items-center justify-center transition-opacity " + (isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")} onMouseDown={(e) => handleMouseDown(e, 'port', node.id)} onTouchStart={(e) => handleMouseDown(e, 'port', node.id)} title="Drag to connect"> <Icons.Link className="w-3 h-3 text-white" /> </div>
                             <div className={"absolute -bottom-6 left-0 right-0 flex justify-center gap-1.5 z-10 transition-opacity " + (isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}> 
-                                {['bg-red-100', 'bg-green-100', 'bg-blue-100', 'bg-white'].map(c => ( 
-                                    <button key={c} onClick={(e)=> {e.stopPropagation(); setNodes(nodes.map(n=>n.id===node.id?{...n, color:c}:n));}} onTouchEnd={(e)=> {e.stopPropagation(); setNodes(nodes.map(n=>n.id===node.id?{...n, color:c}:n));}} className={"w-4 h-4 rounded-full border border-black/10 shadow-sm " + c}/> 
-                                ))} 
+                                {['bg-red-100', 'bg-green-100', 'bg-blue-100', 'bg-white'].map(c => ( <button key={c} onClick={(e)=> {e.stopPropagation(); setNodes(nodes.map(n=>n.id===node.id?{...n, color:c}:n));}} onTouchEnd={(e)=> {e.stopPropagation(); setNodes(nodes.map(n=>n.id===node.id?{...n, color:c}:n));}} className={"w-4 h-4 rounded-full border border-black/10 shadow-sm " + c}/> ))} 
                             </div>
                         </div>
                     )})}
@@ -265,35 +234,134 @@ const GraphEditor = ({ data, onUpdate }) => {
 
 // --- MAIN BOARD APP CONTENT ---
 const BoardApp = ({ data, onUpdate }) => {
-    const [boardData, setBoardData] = useState(data.data || {});
+    // Ensure backwards compatibility with old kanban items missing IDs
+    const [boardData, setBoardData] = useState(() => {
+        let initData = { ...data.data };
+        if (['kanban', 'scrum'].includes(initData.type)) {
+            if (!initData.groups) initData.groups = [{ id: 'g1', title: 'Default Group', color: 'bg-indigo-100', isCollapsed: false }];
+            initData.columns = initData.columns?.map(c => ({
+                ...c, items: c.items.map(i => ({ ...i, id: i.id || Math.random().toString(36).substr(2,9), groupId: i.groupId || initData.groups[0]?.id || 'g1' }))
+            })) || [];
+        }
+        return initData;
+    });
+    
     const [sipocFlow, setSipocFlow] = useState(false);
-    const [dragItem, setDragItem] = useState(null); 
+    const [dragItem, setDragItem] = useState(null); // { cIdx, itemId }
     const [zoomLevel, setZoomLevel] = useState(1);
     
     useEffect(() => { onUpdate({ data: boardData }); }, [boardData]);
     
     const handleGridChange = (idx, val) => { const lines = val.split('\\n'); if (val.endsWith('\\n') && val.length > (boardData.grid[idx].content || '').length) { const count = lines.length; val += count + '. '; } const newGrid = [...boardData.grid]; newGrid[idx].content = val; setBoardData({...boardData, grid: newGrid}); };
     
-    // Native DnD for Desktop
-    const onDragStart = (e, colIdx, itemIdx) => { setDragItem({ colIdx, itemIdx }); e.dataTransfer.effectAllowed = "move"; };
-    const onDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
-    const onDrop = (e, targetColIdx) => { e.preventDefault(); if (!dragItem) return; if (dragItem.colIdx === targetColIdx) return; const newCols = [...boardData.columns]; const item = newCols[dragItem.colIdx].items[dragItem.itemIdx]; newCols[dragItem.colIdx].items.splice(dragItem.itemIdx, 1); newCols[targetColIdx].items.push(item); setBoardData({...boardData, columns: newCols}); setDragItem(null); };
+    // -- Kanban Methods --
+    const toggleGroupMode = () => { setBoardData({ ...boardData, useGroups: !boardData.useGroups }); };
     
-    // Touch Fallback for Kanban
-    const moveCardMobile = (colIdx, itemIdx, dir) => {
-        const newCols = [...boardData.columns];
-        const item = newCols[colIdx].items.splice(itemIdx, 1)[0];
-        newCols[colIdx + dir].items.push(item);
-        setBoardData({ ...boardData, columns: newCols });
+    const addGroup = () => {
+        const newId = 'g' + Date.now();
+        setBoardData({ ...boardData, groups: [...boardData.groups, { id: newId, title: 'New Group', color: 'bg-indigo-100', isCollapsed: false }] });
+    };
+    
+    const updateGroup = (groupId, updates) => {
+        setBoardData({ ...boardData, groups: boardData.groups.map(g => g.id === groupId ? { ...g, ...updates } : g) });
+    };
+    
+    const deleteGroup = (groupId) => {
+        if (boardData.groups.length <= 1) return; // Prevent deleting last group
+        const newGroups = boardData.groups.filter(g => g.id !== groupId);
+        const fallbackId = newGroups[0].id;
+        const newCols = boardData.columns.map(c => ({ ...c, items: c.items.map(i => i.groupId === groupId ? { ...i, groupId: fallbackId } : i) }));
+        setBoardData({ ...boardData, groups: newGroups, columns: newCols });
     };
 
     const addColumn = (idx) => { const newCols = [...boardData.columns]; newCols.splice(idx, 0, { title: 'New Column', items: [] }); setBoardData({...boardData, columns: newCols}); };
     
+    const addCard = (cIdx, groupId = null) => {
+        const newCols = [...boardData.columns];
+        const newCard = { id: Math.random().toString(36).substr(2,9), text: "New Task", color: 'bg-white' };
+        if (boardData.useGroups) newCard.groupId = groupId || boardData.groups[0].id;
+        newCols[cIdx].items.push(newCard);
+        setBoardData({ ...boardData, columns: newCols });
+    };
+
+    const onDragStartKanban = (e, cIdx, itemId) => { setDragItem({ cIdx, itemId }); e.dataTransfer.effectAllowed = "move"; };
+    const onDragOverKanban = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
+    
+    const onDropKanban = (e, targetCIdx, targetGroupId = null) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!dragItem) return;
+
+        const newCols = [...boardData.columns];
+        const sourceCol = newCols[dragItem.cIdx];
+        const itemIndex = sourceCol.items.findIndex(i => i.id === dragItem.itemId);
+        if (itemIndex === -1) return;
+
+        const itemToMove = { ...sourceCol.items[itemIndex] };
+        sourceCol.items.splice(itemIndex, 1); // remove from source
+
+        if (boardData.useGroups) {
+            // Reassign group ONLY if dragging into the leftmost column
+            if (targetCIdx === 0 && targetGroupId) {
+                itemToMove.groupId = targetGroupId;
+            }
+            // Ensure fallback
+            if (!itemToMove.groupId) itemToMove.groupId = boardData.groups[0]?.id;
+        }
+
+        newCols[targetCIdx].items.push(itemToMove);
+        setBoardData({ ...boardData, columns: newCols });
+        setDragItem(null);
+    };
+
+    const moveCardMobile = (cIdx, itemId, dir) => {
+        const newCols = [...boardData.columns];
+        const itemIndex = newCols[cIdx].items.findIndex(i => i.id === itemId);
+        if (itemIndex === -1) return;
+        const item = newCols[cIdx].items.splice(itemIndex, 1)[0];
+        newCols[cIdx + dir].items.push(item);
+        setBoardData({ ...boardData, columns: newCols });
+    };
+    
+    const deleteCard = (cIdx, itemId) => {
+        const newCols = [...boardData.columns];
+        newCols[cIdx].items = newCols[cIdx].items.filter(i => i.id !== itemId);
+        setBoardData({ ...boardData, columns: newCols });
+    };
+
     const ZoomControls = () => (
         <div className="absolute top-2 right-2 z-20 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-lg shadow p-1 flex items-center gap-1 border border-slate-200 dark:border-slate-700 hidden md:flex" onPointerDown={e => e.stopPropagation()}>
+             {['kanban', 'scrum'].includes(boardData.type) && (
+                 <>
+                    <button onClick={toggleGroupMode} className={"px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded flex items-center gap-1.5 transition-colors " + (boardData.useGroups ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300')} title="Toggle Swimlanes">
+                        <Icons.Layers className="w-4 h-4" /> <span className="text-xs">Groups</span>
+                    </button>
+                    <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                 </>
+             )}
              <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"><Icons.ZoomOut className="w-4 h-4 text-slate-600 dark:text-slate-300" /></button>
              <span className="text-xs font-mono w-8 text-center text-slate-600 dark:text-slate-300">{Math.round(zoomLevel * 100)}%</span>
              <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"><Icons.ZoomIn className="w-4 h-4 text-slate-600 dark:text-slate-300" /></button>
+        </div>
+    );
+
+    const renderKanbanCard = (item, cIdx) => (
+        <div key={item.id} draggable onDragStart={(e) => onDragStartKanban(e, cIdx, item.id)} className={"group " + (item.color || 'bg-white') + " dark:bg-slate-800 p-3 rounded-xl shadow-sm text-sm border border-transparent hover:border-indigo-400 dark:hover:border-indigo-500 cursor-grab active:cursor-grabbing transition-all relative shrink-0"}> 
+            <EditableDiv className="w-full bg-transparent focus:outline-none text-slate-900 dark:text-white cursor-text" value={item.text} onChange={(e) => { const newCols = [...boardData.columns]; const iIdx = newCols[cIdx].items.findIndex(i => i.id === item.id); newCols[cIdx].items[iIdx].text = e.target.value; setBoardData({ ...boardData, columns: newCols }); }} /> 
+            <div className="flex justify-between items-center mt-3 pt-2 border-t border-black/5 dark:border-white/5 opacity-0 group-hover:opacity-100 transition-opacity"> 
+                <div className="flex gap-1.5 z-10"> 
+                    {['bg-rose-50', 'bg-blue-50', 'bg-emerald-50', 'bg-amber-50', 'bg-white'].map(c => ( 
+                        <button key={c} onClick={() => { const newCols = [...boardData.columns]; const iIdx = newCols[cIdx].items.findIndex(i => i.id === item.id); newCols[cIdx].items[iIdx].color = c; setBoardData({ ...boardData, columns: newCols }); }} className={"w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10 hover:scale-110 transition-transform " + c} /> 
+                    ))} 
+                </div> 
+                <div className="flex gap-1 z-10 items-center"> 
+                    <div className="flex mr-1 gap-1">
+                        <button onClick={() => moveCardMobile(cIdx, item.id, -1)} disabled={cIdx === 0} className="p-1 text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:hover:text-white"><Icons.ChevronLeft className="w-3.5 h-3.5"/></button>
+                        <button onClick={() => moveCardMobile(cIdx, item.id, 1)} disabled={cIdx === boardData.columns.length - 1} className="p-1 text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:hover:text-white"><Icons.ChevronRight className="w-3.5 h-3.5"/></button>
+                    </div>
+                    <button onClick={() => deleteCard(cIdx, item.id)} className="text-slate-400 hover:text-red-500 p-1"><Icons.Trash className="w-3.5 h-3.5"/></button> 
+                </div> 
+            </div> 
         </div>
     );
 
@@ -303,35 +371,81 @@ const BoardApp = ({ data, onUpdate }) => {
                 return (
                     <>
                         <ZoomControls />
-                        <div className="w-full h-full overflow-x-auto overflow-y-hidden bg-slate-100 dark:bg-slate-950 p-4 relative flex items-start custom-scrollbar bg-grid-pattern">
-                            <div className="flex items-start gap-3 h-full capture-target min-w-max pb-4" style={{ zoom: zoomLevel }}>
-                                <div className="h-full pt-2 group/gap w-6 flex justify-center shrink-0"> <button onClick={() => addColumn(0)} className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-700 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/gap:opacity-100 text-slate-500 shadow-sm" title="Add Column"> <Icons.Plus className="w-4 h-4" /> </button> </div>
+                        <div className="w-full h-full overflow-x-auto overflow-y-hidden bg-slate-50 dark:bg-slate-950 p-4 relative flex items-start custom-scrollbar bg-grid-pattern">
+                            <div className="flex items-start gap-4 h-full capture-target min-w-max pb-4" style={{ zoom: zoomLevel }}>
+                                
+                                <div className="h-full pt-2 group/gap w-6 flex justify-center shrink-0"> <button onClick={() => addColumn(0)} className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/gap:opacity-100 text-slate-500 shadow-sm"> <Icons.Plus className="w-4 h-4" /> </button> </div>
+                                
                                 {boardData.columns.map((col, cIdx) => (
                                     <React.Fragment key={cIdx}>
-                                        <div className="relative w-72 flex-shrink-0 bg-slate-200 dark:bg-slate-900 rounded-2xl p-3 max-h-full flex flex-col shadow-sm group/col border border-slate-300/50 dark:border-slate-700/50" onDragOver={onDragOver} onDrop={(e) => onDrop(e, cIdx)}>
-                                            <div className="font-bold text-slate-700 dark:text-slate-200 px-2 py-2 flex justify-between items-center"> <input className="bg-transparent font-bold focus:bg-white dark:focus:bg-slate-800 focus:outline-none rounded px-1 w-full mr-2 dark:text-white" value={col.title} onChange={(e) => { const newCols = [...boardData.columns]; newCols[cIdx].title = e.target.value; setBoardData({ ...boardData, columns: newCols }); }} /> <div className="flex items-center gap-1 z-10"> <span className="bg-slate-300 dark:bg-slate-800 text-xs px-2 py-0.5 rounded-full">{col.items.length}</span> <button onClick={() => { const newCols = [...boardData.columns]; newCols.splice(cIdx, 1); setBoardData({ ...boardData, columns: newCols }); }} className="text-slate-400 hover:text-red-500 md:opacity-0 group-hover/col:opacity-100 transition-opacity p-1"><Icons.Trash className="w-3.5 h-3.5"/></button> </div> </div>
-                                            <div className="flex-1 overflow-y-auto space-y-2.5 min-h-[50px] p-1 custom-scrollbar"> {col.items.map((item, iIdx) => ( 
-                                                <div key={iIdx} draggable onDragStart={(e) => onDragStart(e, cIdx, iIdx)} className={"group " + (item.color || 'bg-white') + " dark:bg-slate-800 p-3 rounded-xl shadow-sm text-sm border border-transparent hover:border-blue-400 cursor-grab active:cursor-grabbing transition-all relative"}> 
-                                                <EditableDiv className="w-full bg-transparent focus:outline-none text-slate-900 dark:text-white cursor-text" value={item.text} onChange={(e) => { const newCols = [...boardData.columns]; newCols[cIdx].items[iIdx].text = e.target.value; setBoardData({ ...boardData, columns: newCols }); }} /> 
-                                                <div className="flex justify-between items-center mt-2 pt-2 border-t border-black/5 dark:border-white/5 md:opacity-0 group-hover:opacity-100 transition-opacity"> 
-                                                    <div className="flex gap-1 z-10"> {['bg-red-50', 'bg-blue-50', 'bg-green-50', 'bg-white'].map(c => ( <button key={c} onClick={() => { const newCols = [...boardData.columns]; newCols[cIdx].items[iIdx].color = c; setBoardData({ ...boardData, columns: newCols }); }} className={"w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10 " + c} /> ))} </div> 
-                                                    <div className="flex gap-1 z-10 items-center"> 
-                                                        <div className="flex md:hidden mr-1 gap-1">
-                                                            <button onClick={() => moveCardMobile(cIdx, iIdx, -1)} disabled={cIdx === 0} className="p-1 text-slate-500 disabled:opacity-30"><Icons.ChevronLeft className="w-4 h-4"/></button>
-                                                            <button onClick={() => moveCardMobile(cIdx, iIdx, 1)} disabled={cIdx === boardData.columns.length - 1} className="p-1 text-slate-500 disabled:opacity-30"><Icons.ChevronRight className="w-4 h-4"/></button>
-                                                        </div>
-                                                        <button onClick={() => { 
-                                                            const newCols = boardData.columns.map((col, idx) => {
-                                                                if (idx !== cIdx) return col;
-                                                                return { ...col, items: col.items.filter((_, itemIndex) => itemIndex !== iIdx) };
-                                                            });
-                                                            setBoardData({ ...boardData, columns: newCols }); 
-                                                        }} className="text-slate-400 hover:text-red-500 p-1"><Icons.Trash className="w-3.5 h-3.5"/></button> 
-                                                    </div> 
-                                                </div> </div> ))} </div>
-                                            <button onClick={() => { const newCols = [...boardData.columns]; newCols[cIdx].items.push({ text: "New Task", color: 'bg-white' }); setBoardData({ ...boardData, columns: newCols }); }} className="w-full py-2 mt-2 text-sm font-medium text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-xl transition-colors">+ Add Card</button>
+                                        <div className="relative w-80 flex-shrink-0 bg-slate-100 dark:bg-slate-900/90 rounded-2xl p-2.5 max-h-full flex flex-col shadow-sm group/col border border-slate-200 dark:border-slate-800" onDragOver={onDragOverKanban} onDrop={(e) => onDropKanban(e, cIdx)}>
+                                            <div className="font-bold text-slate-700 dark:text-slate-200 px-2 py-2 flex justify-between items-center mb-1"> 
+                                                <input className="bg-transparent font-bold focus:bg-white dark:focus:bg-slate-800 focus:outline-none rounded px-1.5 py-0.5 w-full mr-2 dark:text-white text-base transition-colors" value={col.title} onChange={(e) => { const newCols = [...boardData.columns]; newCols[cIdx].title = e.target.value; setBoardData({ ...boardData, columns: newCols }); }} /> 
+                                                <div className="flex items-center gap-1 z-10 shrink-0"> 
+                                                    <span className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold px-2 py-0.5 rounded-full">{col.items.length}</span> 
+                                                    <button onClick={() => { const newCols = [...boardData.columns]; newCols.splice(cIdx, 1); setBoardData({ ...boardData, columns: newCols }); }} className="text-slate-400 hover:text-red-500 opacity-0 group-hover/col:opacity-100 transition-opacity p-1"><Icons.Trash className="w-3.5 h-3.5"/></button> 
+                                                </div> 
+                                            </div>
+
+                                            <div className="flex-1 overflow-y-auto min-h-[50px] p-1 custom-scrollbar flex flex-col gap-3">
+                                                {boardData.useGroups ? (
+                                                    boardData.groups.map((group, gIdx) => {
+                                                        const groupItems = col.items.filter(i => i.groupId === group.id);
+                                                        return (
+                                                            <div key={group.id} className={"flex flex-col rounded-xl border border-transparent transition-colors " + (cIdx === 0 ? 'bg-white/50 dark:bg-slate-800/30 p-1.5' : '')} onDragOver={onDragOverKanban} onDrop={(e) => onDropKanban(e, cIdx, group.id)}>
+                                                                
+                                                                <div className="flex items-center justify-between mb-2 px-1 group/header">
+                                                                    <div className="flex items-center gap-1.5 overflow-hidden">
+                                                                        <button onClick={() => updateGroup(group.id, { isCollapsed: !group.isCollapsed })} className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded shrink-0">
+                                                                            {group.isCollapsed ? <Icons.ChevronRight className="w-4 h-4"/> : <Icons.ChevronDown className="w-4 h-4"/>}
+                                                                        </button>
+                                                                        <div className={"w-2.5 h-2.5 rounded-full shrink-0 shadow-sm " + group.color}></div>
+                                                                        {cIdx === 0 ? (
+                                                                            <input className="bg-transparent focus:bg-white dark:focus:bg-slate-800 rounded px-1 focus:outline-none text-sm font-semibold text-slate-700 dark:text-slate-300 w-full min-w-0 truncate" value={group.title} onChange={e => updateGroup(group.id, { title: e.target.value })} />
+                                                                        ) : (
+                                                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate px-1">{group.title}</span>
+                                                                        )}
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                                                                        {cIdx === 0 && (
+                                                                            <div className="hidden group-hover/header:flex items-center gap-1 mr-1">
+                                                                                <button onClick={() => updateGroup(group.id, { color: 'bg-rose-400' })} className="w-2.5 h-2.5 rounded-full bg-rose-400 hover:scale-125 transition-transform"></button>
+                                                                                <button onClick={() => updateGroup(group.id, { color: 'bg-indigo-400' })} className="w-2.5 h-2.5 rounded-full bg-indigo-400 hover:scale-125 transition-transform"></button>
+                                                                                <button onClick={() => updateGroup(group.id, { color: 'bg-emerald-400' })} className="w-2.5 h-2.5 rounded-full bg-emerald-400 hover:scale-125 transition-transform"></button>
+                                                                                <button onClick={() => updateGroup(group.id, { color: 'bg-amber-400' })} className="w-2.5 h-2.5 rounded-full bg-amber-400 hover:scale-125 transition-transform"></button>
+                                                                                <button onClick={() => deleteGroup(group.id)} className="ml-1 text-slate-300 hover:text-red-500"><Icons.Trash className="w-3 h-3"/></button>
+                                                                            </div>
+                                                                        )}
+                                                                        <span className="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{groupItems.length}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {!group.isCollapsed && (
+                                                                    <div className="flex flex-col gap-2.5 min-h-[40px] rounded-lg p-1">
+                                                                        {groupItems.map(item => renderKanbanCard(item, cIdx))}
+                                                                        <button onClick={() => addCard(cIdx, group.id)} className="w-full py-1.5 text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-lg transition-colors border border-dashed border-slate-300 dark:border-slate-700">+ Add Card</button>
+                                                                    </div>
+                                                                )}
+                                                                {group.isCollapsed && <div className="h-px bg-slate-200 dark:bg-slate-800 mx-2 mt-1 mb-2"></div>}
+                                                            </div>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <div className="flex flex-col gap-2.5 pb-2">
+                                                        {col.items.map(item => renderKanbanCard(item, cIdx))}
+                                                    </div>
+                                                )}
+                                                
+                                                {!boardData.useGroups && (
+                                                    <button onClick={() => addCard(cIdx)} className="w-full py-2.5 mt-1 text-sm font-medium text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-colors border border-dashed border-slate-300 dark:border-slate-700">+ Add Card</button>
+                                                )}
+                                                {boardData.useGroups && cIdx === 0 && (
+                                                    <button onClick={addGroup} className="w-full py-2.5 mt-2 text-sm font-medium text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors border border-dashed border-indigo-200 dark:border-indigo-800/50">+ Add Group</button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="h-full pt-2 group/gap w-6 flex justify-center shrink-0"> <button onClick={() => addColumn(cIdx + 1)} className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-700 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/gap:opacity-100 text-slate-500 shadow-sm" title="Add Column"> <Icons.Plus className="w-4 h-4" /> </button> </div>
+                                        <div className="h-full pt-2 group/gap w-6 flex justify-center shrink-0"> <button onClick={() => addColumn(cIdx + 1)} className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/gap:opacity-100 text-slate-500 shadow-sm"> <Icons.Plus className="w-4 h-4" /> </button> </div>
                                     </React.Fragment>
                                 ))}
                             </div>
@@ -342,12 +456,12 @@ const BoardApp = ({ data, onUpdate }) => {
                 return ( 
                     <>
                         <ZoomControls />
-                        <div className="w-full h-full overflow-auto bg-slate-100 dark:bg-slate-950 p-6 bg-grid-pattern">
+                        <div className="w-full h-full overflow-auto bg-slate-50 dark:bg-slate-950 p-6 bg-grid-pattern">
                             <div style={{ zoom: zoomLevel }}>
-                                <div className={"grid gap-4 w-full capture-target min-w-[800px] " + (boardData.cols === 3 ? 'grid-cols-3' : 'grid-cols-2')}> 
+                                <div className={"grid gap-5 w-full capture-target min-w-[800px] " + (boardData.cols === 3 ? 'grid-cols-3' : 'grid-cols-2')}> 
                                     {boardData.grid.map((area, idx) => ( 
-                                        <div key={idx} className={(area.color || 'bg-white') + " dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col shadow-sm transition-colors text-slate-900 dark:text-slate-100"}> 
-                                            <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-3 text-lg flex items-center gap-2"> <span className="w-2.5 h-2.5 rounded-full bg-current opacity-50"></span> {area.title} </h3> 
+                                        <div key={idx} className={(area.color || 'bg-white') + " dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 flex flex-col shadow-sm transition-colors text-slate-900 dark:text-slate-100"}> 
+                                            <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 text-lg flex items-center gap-2"> <span className="w-2.5 h-2.5 rounded-full bg-current opacity-50"></span> {area.title} </h3> 
                                             <EditableDiv 
                                                 className="w-full bg-white/50 dark:bg-slate-900/50 border-0 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 dark:text-slate-200 text-base leading-relaxed" 
                                                 value={area.content} 
@@ -440,7 +554,22 @@ const BoardContainer = ({ board, onUpdate, onBack }) => {
     const generateTextRepresentation = (boardData) => {
         let md = '# ' + (board.title || 'Board Export') + '\\n\\n';
         if (boardData.type === 'kanban') {
-            boardData.columns.forEach(col => { md += '## ' + col.title + '\\n'; col.items.forEach(item => { md += '- ' + item.text.replace(/\\n/g, ' ') + '\\n'; }); md += '\\n'; });
+            if (boardData.useGroups && boardData.groups) {
+                boardData.groups.forEach(g => {
+                    md += '## Group: ' + g.title + '\\n';
+                    boardData.columns.forEach(col => {
+                        const items = col.items.filter(i => i.groupId === g.id);
+                        if (items.length > 0) {
+                            md += '### ' + col.title + '\\n';
+                            items.forEach(item => { md += '- ' + item.text.replace(/\\n/g, ' ') + '\\n'; });
+                            md += '\\n';
+                        }
+                    });
+                    md += '\\n';
+                });
+            } else {
+                boardData.columns.forEach(col => { md += '## ' + col.title + '\\n'; col.items.forEach(item => { md += '- ' + item.text.replace(/\\n/g, ' ') + '\\n'; }); md += '\\n'; });
+            }
         } else if (boardData.type === 'grid') {
             boardData.grid.forEach(area => { md += '## ' + area.title + '\\n' + area.content + '\\n\\n'; });
         } else if (boardData.type === 'table') {
@@ -482,10 +611,7 @@ const BoardContainer = ({ board, onUpdate, onBack }) => {
         }
 
         if (format === 'image') {
-            if (!window.htmlToImage) {
-                alert("Please wait a moment for the export library to load.");
-                return;
-            }
+            if (!window.htmlToImage) { alert("Please wait a moment for the export library to load."); return; }
             try {
                 let source = contentRef.current.querySelector('.capture-target');
                 if (!source) source = contentRef.current; 
@@ -513,27 +639,20 @@ const BoardContainer = ({ board, onUpdate, onBack }) => {
 
                 document.body.appendChild(container);
                 container.appendChild(clone);
-                
                 await new Promise(resolve => setTimeout(resolve, 150));
 
                 const dataUrl = await window.htmlToImage.toPng(clone, { 
-                    pixelRatio: 2, 
-                    backgroundColor: isDark ? '#0f172a' : '#f8fafc',
-                    style: { transform: 'none' }
+                    pixelRatio: 2, backgroundColor: isDark ? '#0f172a' : '#f8fafc', style: { transform: 'none' }
                 });
                 
                 document.body.removeChild(container);
-                const link = document.createElement('a'); 
-                link.download = fileName + '.png'; 
-                link.href = dataUrl; 
-                link.click();
+                const link = document.createElement('a'); link.download = fileName + '.png'; link.href = dataUrl; link.click();
             } catch (e) { alert("Image generation failed. " + e); }
         }
     };
 
     return (
         <div className="flex flex-col w-full h-full bg-slate-50 dark:bg-slate-900 transition-colors">
-            {/* Header bar */}
             <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur shrink-0 shadow-sm z-50">
                 <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
                     <button onClick={onBack} className="p-2 md:p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-2 font-medium text-sm flex-shrink-0">
@@ -562,7 +681,6 @@ const BoardContainer = ({ board, onUpdate, onBack }) => {
                 </div>
             </div>
             
-            {/* App Content */}
             <div className="flex-1 overflow-hidden relative" ref={contentRef}>
                 <BoardApp data={board.data} onUpdate={(newData) => onUpdate({ board: { ...board, data: { ...board.data, ...newData } } })} />
             </div>
@@ -575,7 +693,6 @@ const ProductivityBoards = ({ data, onUpdate, instanceId, title }) => {
     const fileInputRef = useRef(null);
     const currentBoard = data.board || null;
 
-    // Inject html-to-image script for exports natively in the host environment
     useEffect(() => {
         if (!window.htmlToImage) {
             const script = document.createElement('script');
@@ -590,8 +707,6 @@ const ProductivityBoards = ({ data, onUpdate, instanceId, title }) => {
                 const parsed = JSON.parse(data.fileData);
                 let subType = parsed.subType || 'kanban';
                 let innerData = parsed.data || parsed; 
-                
-                // Infer subtype if missing from older JSON exports
                 if (!parsed.subType) {
                     if (innerData.type === 'grid' && innerData.cols === 3) subType = 'rule10'; 
                     else if (innerData.type === 'grid' && innerData.grid && innerData.grid[0]?.title === 'Strengths') subType = 'swot'; 
@@ -602,39 +717,20 @@ const ProductivityBoards = ({ data, onUpdate, instanceId, title }) => {
                     else if (innerData.type === 'kanban' && innerData.columns?.length === 5) subType = 'scrum'; 
                     else if (innerData.type === 'risk') subType = 'risk'; 
                 }
-
-                // Push the parsed file data up to the OS state immediately
-                onUpdate({
-                    board: {
-                        id: Date.now().toString(),
-                        title: title ? title.replace('.json', '') : 'Imported Board',
-                        subType: subType,
-                        data: { subType, data: innerData }
-                    }
-                });
-            } catch (err) { 
-                console.error("Failed to parse injected Board JSON:", err); 
-            } 
+                onUpdate({ board: { id: Date.now().toString(), title: title ? title.replace('.json', '') : 'Imported Board', subType: subType, data: { subType, data: innerData } } });
+            } catch (err) { console.error("Failed to parse injected Board JSON:", err); } 
         }
     }, [data?.fileData]);
 
     const createNewBoard = (key) => {
         const template = BOARD_TEMPLATES[key]; 
         const freshData = JSON.parse(JSON.stringify(template.defaultData)); 
-        onUpdate({
-            board: {
-                id: Date.now().toString(),
-                title: template.title,
-                subType: key,
-                data: { subType: key, data: freshData }
-            }
-        });
+        onUpdate({ board: { id: Date.now().toString(), title: template.title, subType: key, data: { subType: key, data: freshData } } });
     };
 
     const handleImport = (e) => {
         const file = e.target.files[0]; 
         if (!file) return; 
-        
         if (file.name.endsWith('.json')) { 
             const reader = new FileReader(); 
             reader.onload = (ev) => { 
@@ -642,7 +738,6 @@ const ProductivityBoards = ({ data, onUpdate, instanceId, title }) => {
                     const parsed = JSON.parse(ev.target.result); 
                     let subType = parsed.subType || 'kanban';
                     let innerData = parsed.data || parsed; 
-                    
                     if (!parsed.subType) {
                         if (innerData.type === 'grid' && innerData.cols === 3) subType = 'rule10'; 
                         else if (innerData.type === 'grid' && innerData.grid[0]?.title === 'Strengths') subType = 'swot'; 
@@ -653,21 +748,11 @@ const ProductivityBoards = ({ data, onUpdate, instanceId, title }) => {
                         else if (innerData.type === 'kanban' && innerData.columns?.length === 5) subType = 'scrum'; 
                         else if (innerData.type === 'risk') subType = 'risk'; 
                     }
-
-                    onUpdate({
-                        board: {
-                            id: Date.now().toString(),
-                            title: file.name.replace('.json', ''),
-                            subType: subType,
-                            data: { subType, data: innerData }
-                        }
-                    });
+                    onUpdate({ board: { id: Date.now().toString(), title: file.name.replace('.json', ''), subType: subType, data: { subType, data: innerData } } });
                 } catch (err) { alert('Invalid Board Data format.'); } 
             }; 
             reader.readAsText(file); 
-        } else {
-            alert('Please upload a .json board file.');
-        }
+        } else { alert('Please upload a .json board file.'); }
         e.target.value = null; 
     };
 
@@ -675,56 +760,57 @@ const ProductivityBoards = ({ data, onUpdate, instanceId, title }) => {
         return (
             <div className="prod-board-app">
                 <style dangerouslySetInnerHTML={{ __html: APP_STYLES }} />
-                <BoardContainer 
-                    board={currentBoard} 
-                    onUpdate={(updates) => onUpdate(updates)} 
-                    onBack={() => onUpdate({ board: null })} 
-                />
+                <BoardContainer board={currentBoard} onUpdate={(updates) => onUpdate(updates)} onBack={() => onUpdate({ board: null })} />
             </div>
         );
     }
 
     return (
-        <div className="prod-board-app bg-slate-50 dark:bg-slate-900 transition-colors overflow-y-auto bg-grid-pattern relative">
+        <div className="prod-board-app bg-slate-50 dark:bg-slate-900 transition-colors overflow-y-auto relative">
             <style dangerouslySetInnerHTML={{ __html: APP_STYLES }} />
             <input type="file" ref={fileInputRef} accept=".json" className="hidden" onChange={handleImport} />
             
-            {/* Template Picker Header */}
-            <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 sm:p-8 max-w-6xl mx-auto gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                        <Icons.Boards className="w-7 h-7 text-indigo-500" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Productivity Boards</h1>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <button onClick={() => fileInputRef.current.click()} className="flex-1 sm:flex-none px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:shadow-md transition-all text-center">
-                        Import JSON Board
-                    </button>
-                    {/* OS handles Dark Mode. This provides an explicit internal toggle syncing with documentElement */}
-                    <button onClick={() => document.documentElement.classList.toggle('dark')} className="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors flex-shrink-0">
-                        <Icons.Theme className="w-5 h-5" />
-                    </button>
-                </div>
-            </header>
+            <div className="absolute inset-0 bg-grid-pattern opacity-60 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent dark:from-slate-900/60 pointer-events-none"></div>
 
-            {/* Template Grid */}
-            <main className="p-6 sm:p-8 max-w-6xl mx-auto pb-20">
-                <h2 className="text-lg font-semibold text-slate-600 dark:text-slate-400 mb-6 uppercase tracking-wider text-sm">Create a New Board</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"> 
-                    {Object.entries(BOARD_TEMPLATES).map(([key, tpl]) => ( 
-                        <button key={key} onClick={() => createNewBoard(key)} className="flex flex-col gap-3 p-6 rounded-3xl bg-white/80 dark:bg-slate-800/80 backdrop-blur shadow-sm hover:shadow-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 transition-all duration-300 text-left group hover:-translate-y-1"> 
-                            <div className="flex items-center gap-4"> 
-                                <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-slate-900 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300 text-indigo-500 border border-indigo-100 dark:border-slate-800 group-hover:border-transparent"> 
-                                    {key === 'kanban' || key === 'scrum' ? <Icons.Boards className="w-6 h-6"/> : key === 'mindmap' || key === 'pert' ? <div className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2.5 h-2.5 bg-current rounded-full"/></div> : <Icons.Boards className="w-6 h-6"/>} 
+            <div className="relative z-10 flex flex-col min-h-full">
+                <header className="flex flex-col sm:flex-row items-center justify-between px-6 sm:px-10 py-8 gap-6 w-full max-w-7xl mx-auto">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                            <Icons.Boards className="w-8 h-8 text-indigo-500" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Boards</h1>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Select a template to begin</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <button onClick={() => fileInputRef.current.click()} className="flex-1 sm:flex-none px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:shadow-md hover:border-indigo-300 transition-all text-center">
+                            Import JSON
+                        </button>
+                        <button onClick={() => document.documentElement.classList.toggle('dark')} className="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors flex-shrink-0 shadow-inner">
+                            <Icons.Theme className="w-5 h-5" />
+                        </button>
+                    </div>
+                </header>
+
+                <main className="px-6 sm:px-10 pb-12 flex-1 w-full max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"> 
+                        {Object.entries(BOARD_TEMPLATES).map(([key, tpl]) => ( 
+                            <button key={key} onClick={() => createNewBoard(key)} className="flex flex-col p-6 rounded-3xl bg-white/70 dark:bg-slate-800/60 backdrop-blur-md shadow-sm hover:shadow-xl border border-slate-200 dark:border-slate-700/80 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all duration-300 text-left group hover:-translate-y-1.5 overflow-hidden relative"> 
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-900/20 rounded-full blur-3xl -mr-10 -mt-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                                <div className="flex items-center gap-4 mb-3 relative z-10"> 
+                                    <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-slate-900 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300 text-indigo-500 border border-indigo-100 dark:border-slate-800 group-hover:border-transparent"> 
+                                        {key === 'kanban' || key === 'scrum' ? <Icons.Boards className="w-6 h-6"/> : key === 'mindmap' || key === 'pert' ? <div className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2.5 h-2.5 bg-current rounded-full"/></div> : <Icons.Boards className="w-6 h-6"/>} 
+                                    </div> 
+                                    <h3 className="font-bold text-lg text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{tpl.title}</h3> 
                                 </div> 
-                                <h3 className="font-bold text-lg text-slate-800 dark:text-white">{tpl.title}</h3> 
-                            </div> 
-                            <p className="text-sm text-slate-500 dark:text-slate-400 pl-1 leading-relaxed">{tpl.desc}</p> 
-                        </button> 
-                    ))} 
-                </div>
-            </main>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed relative z-10">{tpl.desc}</p> 
+                            </button> 
+                        ))} 
+                    </div>
+                </main>
+            </div>
         </div>
     );
 };
