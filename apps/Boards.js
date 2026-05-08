@@ -34,6 +34,8 @@ const Icons = {
     ZoomOut: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>,
     Layers: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg>,
     Upload: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+    Check: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
+    Pen: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
 };
 
 const BOARD_TEMPLATES = {
@@ -48,15 +50,19 @@ const BOARD_TEMPLATES = {
     risk: { title: "Risk Matrix", desc: "Assess severity against probability with an automated visual impact heat map.", defaultData: { type: 'risk', cells: Array(25).fill('') } },
 };
 
-const GROUP_COLORS = [
-    'bg-rose-400', 'bg-orange-400', 'bg-amber-400', 'bg-lime-400', 
-    'bg-emerald-400', 'bg-teal-400', 'bg-cyan-400', 'bg-blue-400', 
-    'bg-indigo-400', 'bg-violet-400', 'bg-fuchsia-400', 'bg-zinc-400'
+const GROUP_COLORS = ['bg-rose-400', 'bg-indigo-400', 'bg-emerald-400', 'bg-amber-400'];
+
+const TASK_COLORS = [
+    'bg-rose-50 dark:bg-zinc-700',
+    'bg-blue-50 dark:bg-zinc-800',
+    'bg-emerald-50 dark:bg-zinc-900',
+    'bg-amber-50 dark:bg-neutral-800',
+    'bg-white dark:bg-zinc-950'
 ];
 
 const INSTRUCTIONS = {
-    kanban: "Drag cards between columns. Use arrows on mobile. Click title to edit. Toggle groups for swimlanes.",
-    scrum: "Agile workflow. Edit titles, drag cards, add columns via hover. Toggle groups to separate features.",
+    kanban: "Drag cards between columns. Edit tasks only in the first column. Click the Check/Pen icon to save. Toggle groups for swimlanes.",
+    scrum: "Agile workflow. Edit text in the first column, drag cards, add columns via hover. Toggle groups to separate features.",
     swot: "Analyze Strengths, Weaknesses, Opportunities, and Threats. Auto-numbered lists.",
     eisenhower: "Prioritize based on Urgency and Importance. Auto-numbered lists.",
     mindmap: "Double click background to add nodes. Tap/Click a node to reveal connection port. Drag port to connect.",
@@ -262,7 +268,32 @@ const BoardApp = ({ data, onUpdate, isExporting }) => {
     const handleGridChange = (idx, val) => { const lines = val.split('\\n'); if (val.endsWith('\\n') && val.length > (boardData.grid[idx].content || '').length) { const count = lines.length; val += count + '. '; } const newGrid = [...boardData.grid]; newGrid[idx].content = val; setBoardData({...boardData, grid: newGrid}); };
     
     // -- Kanban Methods --
-    const toggleGroupMode = () => { setBoardData({ ...boardData, useGroups: !boardData.useGroups }); };
+    const toggleGroupMode = () => { 
+        const nextState = !boardData.useGroups;
+        let newGroups = [...(boardData.groups || [])];
+        let newCols = [...boardData.columns];
+
+        if (nextState) {
+            let hasUngrouped = false;
+            newCols.forEach(c => c.items.forEach(i => { if (!i.groupId) hasUngrouped = true; }));
+            if (hasUngrouped || newGroups.length === 0) {
+                const otherId = 'g_other';
+                if (!newGroups.some(g => g.id === otherId)) {
+                    newGroups.push({ id: otherId, title: 'Other', color: 'bg-zinc-400' });
+                }
+                newCols = newCols.map(c => ({
+                    ...c, items: c.items.map(i => {
+                        if (!i.groupId || !newGroups.some(g => g.id === i.groupId)) {
+                            return { ...i, groupId: otherId };
+                        }
+                        return i;
+                    })
+                }));
+            }
+        }
+
+        setBoardData({ ...boardData, useGroups: nextState, groups: newGroups, columns: newCols }); 
+    };
     
     const toggleCollapse = (cIdx, groupId) => {
         const key = cIdx + '-' + groupId;
@@ -279,21 +310,44 @@ const BoardApp = ({ data, onUpdate, isExporting }) => {
     };
     
     const deleteGroup = (groupId) => {
-        if (boardData.groups.length <= 1) return; // Prevent deleting last group
         const newGroups = boardData.groups.filter(g => g.id !== groupId);
-        const fallbackId = newGroups[0].id;
-        const newCols = boardData.columns.map(c => ({ ...c, items: c.items.map(i => i.groupId === groupId ? { ...i, groupId: fallbackId } : i) }));
-        setBoardData({ ...boardData, groups: newGroups, columns: newCols });
+        
+        if (newGroups.length === 0) {
+            // Turning off group mode entirely
+            const newCols = boardData.columns.map(c => ({
+                ...c, items: c.items.map(i => ({ ...i, groupId: null }))
+            }));
+            setBoardData({ ...boardData, groups: [], columns: newCols, useGroups: false });
+        } else {
+            // Transfer tasks to the first available remaining group
+            const fallbackId = newGroups[0].id;
+            const newCols = boardData.columns.map(c => ({ ...c, items: c.items.map(i => i.groupId === groupId ? { ...i, groupId: fallbackId } : i) }));
+            setBoardData({ ...boardData, groups: newGroups, columns: newCols });
+        }
     };
 
     const addColumn = (idx) => { const newCols = [...boardData.columns]; newCols.splice(idx, 0, { title: 'New Column', items: [] }); setBoardData({...boardData, columns: newCols}); };
     
     const addCard = (cIdx, groupId = null) => {
         const newCols = [...boardData.columns];
-        const newCard = { id: Math.random().toString(36).substr(2,9), text: "New Task", color: 'bg-white' };
-        if (boardData.useGroups) newCard.groupId = groupId || boardData.groups[0].id;
+        const newCard = { 
+            id: Math.random().toString(36).substr(2,9), 
+            text: cIdx === 0 ? "" : "New Task", 
+            color: 'bg-white dark:bg-zinc-950',
+            isEditing: cIdx === 0
+        };
+        if (boardData.useGroups) newCard.groupId = groupId || (boardData.groups.length > 0 ? boardData.groups[0].id : null);
         newCols[cIdx].items.push(newCard);
         setBoardData({ ...boardData, columns: newCols });
+    };
+
+    const toggleEdit = (cIdx, itemId, forceState) => {
+        const newCols = [...boardData.columns];
+        const iIdx = newCols[cIdx].items.findIndex(i => i.id === itemId);
+        if (iIdx > -1) {
+            newCols[cIdx].items[iIdx].isEditing = forceState;
+            setBoardData({ ...boardData, columns: newCols });
+        }
     };
 
     const onDragStartKanban = (e, cIdx, itemId) => { setDragItem({ cIdx, itemId }); e.dataTransfer.effectAllowed = "move"; };
@@ -357,25 +411,59 @@ const BoardApp = ({ data, onUpdate, isExporting }) => {
         </div>
     );
 
-    const renderKanbanCard = (item, cIdx) => (
-        <div key={item.id} draggable onDragStart={(e) => onDragStartKanban(e, cIdx, item.id)} className={"group " + (item.color || 'bg-white') + " dark:bg-zinc-800 p-3 rounded-xl shadow-sm text-sm border border-transparent hover:border-indigo-400 dark:hover:border-indigo-500 cursor-grab active:cursor-grabbing transition-all relative shrink-0"}> 
-            <EditableDiv className="w-full bg-transparent focus:outline-none text-slate-900 dark:text-white cursor-text" value={item.text} onChange={(e) => { const newCols = [...boardData.columns]; const iIdx = newCols[cIdx].items.findIndex(i => i.id === item.id); newCols[cIdx].items[iIdx].text = e.target.value; setBoardData({ ...boardData, columns: newCols }); }} /> 
-            <div className="flex justify-between items-center mt-3 pt-2 border-t border-black/5 dark:border-white/5 opacity-0 group-hover:opacity-100 transition-opacity"> 
-                <div className="flex gap-1.5 z-10"> 
-                    {['bg-rose-50', 'bg-blue-50', 'bg-emerald-50', 'bg-amber-50', 'bg-white'].map(c => ( 
-                        <button key={c} onClick={() => { const newCols = [...boardData.columns]; const iIdx = newCols[cIdx].items.findIndex(i => i.id === item.id); newCols[cIdx].items[iIdx].color = c; setBoardData({ ...boardData, columns: newCols }); }} className={"w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10 hover:scale-110 transition-transform " + c} /> 
-                    ))} 
+    const renderKanbanCard = (item, cIdx) => {
+        const isFirstCol = cIdx === 0;
+        const isEditing = isFirstCol && item.isEditing;
+        const baseColor = item.color || 'bg-white dark:bg-zinc-950';
+
+        return (
+            <div key={item.id} draggable={!isEditing} onDragStart={!isEditing ? (e) => onDragStartKanban(e, cIdx, item.id) : undefined} className={"group " + baseColor + " p-3 rounded-xl shadow-sm text-sm border border-transparent hover:border-indigo-400 dark:hover:border-indigo-500 transition-all relative shrink-0 " + (isEditing ? "" : "cursor-grab active:cursor-grabbing")}> 
+                
+                <div className="flex-1">
+                    {isEditing ? (
+                        <EditableDiv 
+                            className="w-full bg-white/50 dark:bg-black/20 focus:outline-none text-slate-900 dark:text-white cursor-text rounded px-1 -mx-1" 
+                            value={item.text} 
+                            placeholder="Type task..."
+                            onChange={(e) => { 
+                                const newCols = [...boardData.columns]; 
+                                const iIdx = newCols[cIdx].items.findIndex(i => i.id === item.id); 
+                                newCols[cIdx].items[iIdx].text = e.target.value; 
+                                setBoardData({ ...boardData, columns: newCols }); 
+                            }} 
+                        /> 
+                    ) : (
+                        <div className="w-full text-slate-900 dark:text-white whitespace-pre-wrap">{item.text || 'New Task'}</div>
+                    )}
+                </div>
+
+                <div className={"flex justify-between items-center mt-3 pt-2 border-t border-black/5 dark:border-white/5 transition-opacity " + (isEditing ? "opacity-100" : "opacity-0 group-hover:opacity-100")}> 
+                    <div className="flex gap-1.5 z-10"> 
+                        {TASK_COLORS.map(c => {
+                            const classes = c.split(' ');
+                            return (
+                                <button key={c} onClick={() => { const newCols = [...boardData.columns]; const iIdx = newCols[cIdx].items.findIndex(i => i.id === item.id); newCols[cIdx].items[iIdx].color = c; setBoardData({ ...boardData, columns: newCols }); }} className={"w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10 hover:scale-110 transition-transform " + classes[0] + " " + (classes[1] || '')} /> 
+                            )
+                        })} 
+                    </div> 
+                    <div className="flex gap-1 z-10 items-center"> 
+                        {isFirstCol && (
+                            isEditing ? (
+                                <button onClick={() => toggleEdit(cIdx, item.id, false)} className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded transition-colors"><Icons.Check className="w-4 h-4"/></button>
+                            ) : (
+                                <button onClick={() => toggleEdit(cIdx, item.id, true)} className="p-1 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded transition-colors"><Icons.Pen className="w-3.5 h-3.5"/></button>
+                            )
+                        )}
+                        <div className="flex mr-1 gap-1">
+                            <button onClick={() => moveCardMobile(cIdx, item.id, -1)} disabled={cIdx === 0} className="p-1 text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:hover:text-white"><Icons.ChevronLeft className="w-3.5 h-3.5"/></button>
+                            <button onClick={() => moveCardMobile(cIdx, item.id, 1)} disabled={cIdx === boardData.columns.length - 1} className="p-1 text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:hover:text-white"><Icons.ChevronRight className="w-3.5 h-3.5"/></button>
+                        </div>
+                        <button onClick={() => deleteCard(cIdx, item.id)} className="text-slate-400 hover:text-red-500 p-1"><Icons.Trash className="w-3.5 h-3.5"/></button> 
+                    </div> 
                 </div> 
-                <div className="flex gap-1 z-10 items-center"> 
-                    <div className="flex mr-1 gap-1">
-                        <button onClick={() => moveCardMobile(cIdx, item.id, -1)} disabled={cIdx === 0} className="p-1 text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:hover:text-white"><Icons.ChevronLeft className="w-3.5 h-3.5"/></button>
-                        <button onClick={() => moveCardMobile(cIdx, item.id, 1)} disabled={cIdx === boardData.columns.length - 1} className="p-1 text-slate-500 disabled:opacity-30 hover:text-slate-800 dark:hover:text-white"><Icons.ChevronRight className="w-3.5 h-3.5"/></button>
-                    </div>
-                    <button onClick={() => deleteCard(cIdx, item.id)} className="text-slate-400 hover:text-red-500 p-1"><Icons.Trash className="w-3.5 h-3.5"/></button> 
-                </div> 
-            </div> 
-        </div>
-    );
+            </div>
+        );
+    };
 
     const renderBoard = () => {
         switch (boardData.type) {
@@ -424,7 +512,7 @@ const BoardApp = ({ data, onUpdate, isExporting }) => {
                                                                     
                                                                     <div className="flex items-center gap-1 shrink-0 ml-2">
                                                                         {cIdx === 0 && (
-                                                                            <div className="hidden group-hover/header:flex absolute right-8 top-0 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 p-1.5 rounded-lg shadow-xl z-20 items-center gap-1.5 flex-wrap w-40 animate-slide-up">
+                                                                            <div className="hidden group-hover/header:flex absolute right-8 top-0 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 p-1.5 rounded-lg shadow-xl z-20 items-center gap-1.5 flex-wrap w-24 animate-slide-up">
                                                                                 {GROUP_COLORS.map(c => (
                                                                                     <button key={c} onClick={() => updateGroup(group.id, { color: c })} className={"w-4 h-4 rounded-full hover:scale-125 transition-transform shadow-sm " + c}></button>
                                                                                 ))}
