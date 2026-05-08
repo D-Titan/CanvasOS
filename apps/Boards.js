@@ -18,7 +18,7 @@ const deepCloneWithValues = (sourceNode) => {
 
 // --- ICONS ---
 const Icons = {
-    Boards: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" className="text-indigo-500"/><path d="M8 7v7" className="text-indigo-500"/><path d="M12 7v4" className="text-indigo-500"/><path d="M16 7v9" className="text-indigo-500"/></svg>,
+    Boards: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="3" rx="2" className="currentColor"/><path d="M8 7v7" className="currentColor"/><path d="M12 7v4" className="currentColor"/><path d="M16 7v9" className="currentColor"/></svg>,
     Close: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
     Theme: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>,
     Trash: ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
@@ -37,16 +37,22 @@ const Icons = {
 };
 
 const BOARD_TEMPLATES = {
-    kanban: { title: "Kanban Board", desc: "Manage workflow with columns.", defaultData: { type: 'kanban', useGroups: false, groups: [], columns: [{title: 'To Do', items: []}, {title: 'In Progress', items: []}, {title: 'Done', items: []}] } },
-    swot: { title: "SWOT Analysis", desc: "Strengths, Weaknesses, Opportunities, Threats.", defaultData: { type: 'grid', grid: [{title: 'Strengths', content: '1. ', color: 'bg-green-50 dark:bg-green-900/20'}, {title: 'Weaknesses', content: '1. ', color: 'bg-red-50 dark:bg-red-900/20'}, {title: 'Opportunities', content: '1. ', color: 'bg-blue-50 dark:bg-blue-900/20'}, {title: 'Threats', content: '1. ', color: 'bg-amber-50 dark:bg-amber-900/20'}] } },
-    eisenhower: { title: "Eisenhower Matrix", desc: "Urgent vs Important task prioritization.", defaultData: { type: 'grid', grid: [{title: 'Urgent & Important', content: '1. ', color: 'bg-red-50 dark:bg-red-900/20'}, {title: 'Not Urgent & Important', content: '1. ', color: 'bg-blue-50 dark:bg-blue-900/20'}, {title: 'Urgent & Not Important', content: '1. ', color: 'bg-amber-50 dark:bg-amber-900/20'}, {title: 'Not Urgent & Not Important', content: '1. ', color: 'bg-green-50 dark:bg-green-900/20'}] } },
-    mindmap: { title: "Mind Map", desc: "Visual idea structuring.", defaultData: { type: 'graph', nodes: [{ id: 'root', x: 300, y: 200, text: 'Central Idea', color: 'bg-white' }], edges: [] } },
-    sipoc: { title: "SIPOC Diagram", desc: "Suppliers, Inputs, Process, Outputs, Customers.", defaultData: { type: 'table', columns: ['Suppliers', 'Inputs', 'Process', 'Outputs', 'Customers'], rows: [['', '', '', '', '']] } },
-    rule10: { title: "10-10-10 Rule", desc: "Decisions in 10 min, 10 months, 10 years.", defaultData: { type: 'grid', cols: 3, grid: [{title: '10 Minutes', content: '1. ', color: 'bg-slate-50 dark:bg-slate-800'}, {title: '10 Months', content: '1. ', color: 'bg-slate-50 dark:bg-slate-800'}, {title: '10 Years', content: '1. ', color: 'bg-slate-50 dark:bg-slate-800'}] } },
-    scrum: { title: "Scrum Board", desc: "Sprint backlog and tracking.", defaultData: { type: 'kanban', useGroups: true, groups: [{ id: 'g1', title: 'Sprint 1', color: 'bg-blue-100', isCollapsed: false }], columns: [{title: 'Backlog', items: []}, {title: 'Sprint', items: []}, {title: 'In Progress', items: []}, {title: 'Testing', items: []}, {title: 'Done', items: []}] } },
-    pert: { title: "PERT Chart", desc: "Program Evaluation and Review Technique node map.", defaultData: { type: 'graph', subType: 'pert', nodes: [{ id: 'start', x: 100, y: 200, text: 'Start', color: 'bg-green-100' }, { id: 'end', x: 500, y: 200, text: 'End', color: 'bg-red-100' }], edges: [] } },
-    risk: { title: "Risk Matrix", desc: "Likelihood vs Impact Assessment.", defaultData: { type: 'risk', cells: Array(25).fill('') } },
+    kanban: { title: "Kanban Board", desc: "Manage workflow and pipelines with customizable columns and groups.", defaultData: { type: 'kanban', useGroups: false, groups: [], columns: [{title: 'To Do', items: []}, {title: 'In Progress', items: []}, {title: 'Done', items: []}] } },
+    swot: { title: "SWOT Analysis", desc: "Strategic planning to identify Strengths, Weaknesses, Opportunities, and Threats.", defaultData: { type: 'grid', grid: [{title: 'Strengths', content: '1. ', color: 'bg-green-50 dark:bg-green-900/20'}, {title: 'Weaknesses', content: '1. ', color: 'bg-red-50 dark:bg-red-900/20'}, {title: 'Opportunities', content: '1. ', color: 'bg-blue-50 dark:bg-blue-900/20'}, {title: 'Threats', content: '1. ', color: 'bg-amber-50 dark:bg-amber-900/20'}] } },
+    eisenhower: { title: "Eisenhower Matrix", desc: "Prioritize your tasks based on their Urgency and Importance.", defaultData: { type: 'grid', grid: [{title: 'Urgent & Important', content: '1. ', color: 'bg-red-50 dark:bg-red-900/20'}, {title: 'Not Urgent & Important', content: '1. ', color: 'bg-blue-50 dark:bg-blue-900/20'}, {title: 'Urgent & Not Important', content: '1. ', color: 'bg-amber-50 dark:bg-amber-900/20'}, {title: 'Not Urgent & Not Important', content: '1. ', color: 'bg-green-50 dark:bg-green-900/20'}] } },
+    mindmap: { title: "Mind Map", desc: "A freeform visual space for structuring ideas and brainstorming connections.", defaultData: { type: 'graph', nodes: [{ id: 'root', x: 300, y: 200, text: 'Central Idea', color: 'bg-white' }], edges: [] } },
+    sipoc: { title: "SIPOC Diagram", desc: "Document process mapping via Suppliers, Inputs, Process, Outputs, Customers.", defaultData: { type: 'table', columns: ['Suppliers', 'Inputs', 'Process', 'Outputs', 'Customers'], rows: [['', '', '', '', '']] } },
+    rule10: { title: "10-10-10 Rule", desc: "Evaluate decisions in the timeframe of 10 minutes, 10 months, and 10 years.", defaultData: { type: 'grid', cols: 3, grid: [{title: '10 Minutes', content: '1. ', color: 'bg-slate-50 dark:bg-zinc-800'}, {title: '10 Months', content: '1. ', color: 'bg-slate-50 dark:bg-zinc-800'}, {title: '10 Years', content: '1. ', color: 'bg-slate-50 dark:bg-zinc-800'}] } },
+    scrum: { title: "Scrum Board", desc: "Agile framework board supporting sprint pipelines and feature swimlanes.", defaultData: { type: 'kanban', useGroups: true, groups: [{ id: 'g1', title: 'Sprint 1 / Feature A', color: 'bg-indigo-400' }], columns: [{title: 'Backlog', items: []}, {title: 'Sprint', items: []}, {title: 'In Progress', items: []}, {title: 'Testing', items: []}, {title: 'Done', items: []}] } },
+    pert: { title: "PERT Chart", desc: "Program Evaluation and Review Technique. Map logic diagrams easily.", defaultData: { type: 'graph', subType: 'pert', nodes: [{ id: 'start', x: 100, y: 200, text: 'Start', color: 'bg-green-100' }, { id: 'end', x: 500, y: 200, text: 'End', color: 'bg-red-100' }], edges: [] } },
+    risk: { title: "Risk Matrix", desc: "Assess severity against probability with an automated visual impact heat map.", defaultData: { type: 'risk', cells: Array(25).fill('') } },
 };
+
+const GROUP_COLORS = [
+    'bg-rose-400', 'bg-orange-400', 'bg-amber-400', 'bg-lime-400', 
+    'bg-emerald-400', 'bg-teal-400', 'bg-cyan-400', 'bg-blue-400', 
+    'bg-indigo-400', 'bg-violet-400', 'bg-fuchsia-400', 'bg-zinc-400'
+];
 
 const INSTRUCTIONS = {
     kanban: "Drag cards between columns. Use arrows on mobile. Click title to edit. Toggle groups for swimlanes.",
@@ -67,20 +73,20 @@ const APP_STYLES =
     ".prod-board-app .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; } " +
     ".prod-board-app .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } " +
     ".prod-board-app .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; } " +
-    ".dark .prod-board-app .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; } " +
+    ".dark .prod-board-app .custom-scrollbar::-webkit-scrollbar-thumb { background: #52525b; } " +
     ".prod-board-app .editable-div:empty:before { content: attr(placeholder); color: rgba(156, 163, 175, 0.8); pointer-events: none; display: block; }";
 
 const InfoButton = ({ text }) => {
     const [show, setShow] = useState(false);
     return (
         <div className="relative z-50">
-            <button onClick={() => setShow(!show)} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:bg-slate-50 shadow-md transition-colors border border-slate-200 dark:border-slate-700">
+            <button onClick={() => setShow(!show)} className="w-10 h-10 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:bg-slate-50 shadow-md transition-colors border border-slate-200 dark:border-zinc-700">
                 <Icons.Info className="w-5 h-5" />
             </button>
             {show && (
-                <div className="absolute bottom-12 left-0 w-72 bg-slate-800 text-white text-sm p-4 rounded-xl shadow-2xl z-50 border border-slate-700">
+                <div className="absolute bottom-12 left-0 w-72 bg-zinc-800 text-white text-sm p-4 rounded-xl shadow-2xl z-50 border border-zinc-700">
                     {text}
-                    <button onClick={() => setShow(false)} className="absolute top-2 right-2 text-slate-400 hover:text-white">×</button>
+                    <button onClick={() => setShow(false)} className="absolute top-2 right-2 text-zinc-400 hover:text-white">×</button>
                 </div>
             )}
         </div>
@@ -192,9 +198,9 @@ const GraphEditor = ({ data, onUpdate }) => {
     };
 
     return (
-        <div className="w-full h-full relative overflow-hidden bg-slate-50 dark:bg-slate-900 select-none bg-grid-pattern">
+        <div className="w-full h-full relative overflow-hidden bg-slate-50 dark:bg-zinc-900 select-none bg-grid-pattern">
              <div className="absolute top-2 left-2 z-20 flex gap-2"> 
-                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded px-2 py-1 text-xs font-mono border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 pointer-events-none"> Zoom: {Math.round(scale * 100)}% </div> 
+                <div className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur rounded px-2 py-1 text-xs font-mono border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 pointer-events-none"> Zoom: {Math.round(scale * 100)}% </div> 
                 {hasSelection && <button onClick={deleteSelected} className="bg-red-500 hover:bg-red-600 text-white rounded px-2 py-1 text-xs shadow-sm flex items-center gap-1"><Icons.Trash className="w-3.5 h-3.5" /> Delete</button>}
              </div>
              
@@ -217,15 +223,15 @@ const GraphEditor = ({ data, onUpdate }) => {
                     {nodes.map(node => {
                         const isSelected = selected.has(node.id);
                         return (
-                        <div key={node.id} className={"absolute w-32 p-2 rounded-lg shadow-md border-2 cursor-move group " + node.color + " dark:bg-slate-800 text-slate-800 " + (isSelected ? "border-blue-500 ring-2 ring-blue-200" : "border-slate-300 dark:border-slate-600")} style={{ left: node.x, top: node.y }} onMouseDown={(e) => handleMouseDown(e, 'node', node.id)} onTouchStart={(e) => handleMouseDown(e, 'node', node.id)}>
-                            <EditableDiv className="w-full text-center bg-transparent focus:outline-none text-sm font-medium text-slate-700 dark:text-slate-200 resize-none overflow-hidden" value={node.text} onChange={e => setNodes(nodes.map(n => n.id === node.id ? { ...n, text: e.target.value } : n))} minHeight={24} />
-                            <div className={"absolute top-1/2 -right-3 -translate-y-1/2 w-5 h-5 bg-slate-400 hover:bg-blue-500 rounded-full cursor-crosshair shadow-sm border-2 border-white dark:border-slate-800 z-20 flex items-center justify-center transition-opacity " + (isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")} onMouseDown={(e) => handleMouseDown(e, 'port', node.id)} onTouchStart={(e) => handleMouseDown(e, 'port', node.id)} title="Drag to connect"> <Icons.Link className="w-3 h-3 text-white" /> </div>
+                        <div key={node.id} className={"absolute w-32 p-2 rounded-lg shadow-md border-2 cursor-move group " + node.color + " dark:bg-zinc-800 text-slate-800 " + (isSelected ? "border-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900" : "border-slate-300 dark:border-zinc-700")} style={{ left: node.x, top: node.y }} onMouseDown={(e) => handleMouseDown(e, 'node', node.id)} onTouchStart={(e) => handleMouseDown(e, 'node', node.id)}>
+                            <EditableDiv className="w-full text-center bg-transparent focus:outline-none text-sm font-medium text-slate-700 dark:text-zinc-200 resize-none overflow-hidden" value={node.text} onChange={e => setNodes(nodes.map(n => n.id === node.id ? { ...n, text: e.target.value } : n))} minHeight={24} />
+                            <div className={"absolute top-1/2 -right-3 -translate-y-1/2 w-5 h-5 bg-slate-400 hover:bg-indigo-500 rounded-full cursor-crosshair shadow-sm border-2 border-white dark:border-zinc-800 z-20 flex items-center justify-center transition-opacity " + (isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")} onMouseDown={(e) => handleMouseDown(e, 'port', node.id)} onTouchStart={(e) => handleMouseDown(e, 'port', node.id)} title="Drag to connect"> <Icons.Link className="w-3 h-3 text-white" /> </div>
                             <div className={"absolute -bottom-6 left-0 right-0 flex justify-center gap-1.5 z-10 transition-opacity " + (isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}> 
-                                {['bg-red-100', 'bg-green-100', 'bg-blue-100', 'bg-white'].map(c => ( <button key={c} onClick={(e)=> {e.stopPropagation(); setNodes(nodes.map(n=>n.id===node.id?{...n, color:c}:n));}} onTouchEnd={(e)=> {e.stopPropagation(); setNodes(nodes.map(n=>n.id===node.id?{...n, color:c}:n));}} className={"w-4 h-4 rounded-full border border-black/10 shadow-sm " + c}/> ))} 
+                                {['bg-rose-100', 'bg-emerald-100', 'bg-indigo-100', 'bg-white'].map(c => ( <button key={c} onClick={(e)=> {e.stopPropagation(); setNodes(nodes.map(n=>n.id===node.id?{...n, color:c}:n));}} onTouchEnd={(e)=> {e.stopPropagation(); setNodes(nodes.map(n=>n.id===node.id?{...n, color:c}:n));}} className={"w-4 h-4 rounded-full border border-black/10 shadow-sm " + c}/> ))} 
                             </div>
                         </div>
                     )})}
-                    {interaction?.type === 'box' && ( <div className="absolute border border-blue-500 bg-blue-500/10 pointer-events-none" style={{ left: Math.min(interaction.startX, interaction.currX), top: Math.min(interaction.startY, interaction.currY), width: Math.abs(interaction.currX - interaction.startX), height: Math.abs(interaction.currY - interaction.startY) }} /> )}
+                    {interaction?.type === 'box' && ( <div className="absolute border border-indigo-500 bg-indigo-500/10 pointer-events-none" style={{ left: Math.min(interaction.startX, interaction.currX), top: Math.min(interaction.startY, interaction.currY), width: Math.abs(interaction.currX - interaction.startX), height: Math.abs(interaction.currY - interaction.startY) }} /> )}
                 </div>
             </div>
         </div>
@@ -233,12 +239,12 @@ const GraphEditor = ({ data, onUpdate }) => {
 };
 
 // --- MAIN BOARD APP CONTENT ---
-const BoardApp = ({ data, onUpdate }) => {
+const BoardApp = ({ data, onUpdate, isExporting }) => {
     // Ensure backwards compatibility with old kanban items missing IDs
     const [boardData, setBoardData] = useState(() => {
         let initData = { ...data.data };
         if (['kanban', 'scrum'].includes(initData.type)) {
-            if (!initData.groups) initData.groups = [{ id: 'g1', title: 'Default Group', color: 'bg-indigo-100', isCollapsed: false }];
+            if (!initData.groups) initData.groups = [{ id: 'g1', title: 'Default Group', color: 'bg-indigo-400' }];
             initData.columns = initData.columns?.map(c => ({
                 ...c, items: c.items.map(i => ({ ...i, id: i.id || Math.random().toString(36).substr(2,9), groupId: i.groupId || initData.groups[0]?.id || 'g1' }))
             })) || [];
@@ -246,6 +252,7 @@ const BoardApp = ({ data, onUpdate }) => {
         return initData;
     });
     
+    const [collapsedGroups, setCollapsedGroups] = useState({}); // Stores per column collapse state: { "cIdx-groupId": boolean }
     const [sipocFlow, setSipocFlow] = useState(false);
     const [dragItem, setDragItem] = useState(null); // { cIdx, itemId }
     const [zoomLevel, setZoomLevel] = useState(1);
@@ -257,9 +264,14 @@ const BoardApp = ({ data, onUpdate }) => {
     // -- Kanban Methods --
     const toggleGroupMode = () => { setBoardData({ ...boardData, useGroups: !boardData.useGroups }); };
     
+    const toggleCollapse = (cIdx, groupId) => {
+        const key = cIdx + '-' + groupId;
+        setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
     const addGroup = () => {
         const newId = 'g' + Date.now();
-        setBoardData({ ...boardData, groups: [...boardData.groups, { id: newId, title: 'New Group', color: 'bg-indigo-100', isCollapsed: false }] });
+        setBoardData({ ...boardData, groups: [...boardData.groups, { id: newId, title: 'New Group', color: 'bg-indigo-400' }] });
     };
     
     const updateGroup = (groupId, updates) => {
@@ -330,23 +342,23 @@ const BoardApp = ({ data, onUpdate }) => {
     };
 
     const ZoomControls = () => (
-        <div className="absolute top-2 right-2 z-20 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-lg shadow p-1 flex items-center gap-1 border border-slate-200 dark:border-slate-700 hidden md:flex" onPointerDown={e => e.stopPropagation()}>
+        <div className="absolute top-2 right-2 z-20 bg-white/80 dark:bg-zinc-800/80 backdrop-blur rounded-lg shadow p-1 flex items-center gap-1 border border-slate-200 dark:border-zinc-700 hidden md:flex" onPointerDown={e => e.stopPropagation()}>
              {['kanban', 'scrum'].includes(boardData.type) && (
                  <>
-                    <button onClick={toggleGroupMode} className={"px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded flex items-center gap-1.5 transition-colors " + (boardData.useGroups ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-slate-300')} title="Toggle Swimlanes">
+                    <button onClick={toggleGroupMode} className={"px-2 py-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded flex items-center gap-1.5 transition-colors " + (boardData.useGroups ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-600 dark:text-zinc-300')} title="Toggle Swimlanes">
                         <Icons.Layers className="w-4 h-4" /> <span className="text-xs">Groups</span>
                     </button>
-                    <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                    <div className="w-px h-4 bg-slate-300 dark:bg-zinc-600 mx-1"></div>
                  </>
              )}
-             <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"><Icons.ZoomOut className="w-4 h-4 text-slate-600 dark:text-slate-300" /></button>
-             <span className="text-xs font-mono w-8 text-center text-slate-600 dark:text-slate-300">{Math.round(zoomLevel * 100)}%</span>
-             <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"><Icons.ZoomIn className="w-4 h-4 text-slate-600 dark:text-slate-300" /></button>
+             <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded"><Icons.ZoomOut className="w-4 h-4 text-slate-600 dark:text-zinc-300" /></button>
+             <span className="text-xs font-mono w-8 text-center text-slate-600 dark:text-zinc-300">{Math.round(zoomLevel * 100)}%</span>
+             <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded"><Icons.ZoomIn className="w-4 h-4 text-slate-600 dark:text-zinc-300" /></button>
         </div>
     );
 
     const renderKanbanCard = (item, cIdx) => (
-        <div key={item.id} draggable onDragStart={(e) => onDragStartKanban(e, cIdx, item.id)} className={"group " + (item.color || 'bg-white') + " dark:bg-slate-800 p-3 rounded-xl shadow-sm text-sm border border-transparent hover:border-indigo-400 dark:hover:border-indigo-500 cursor-grab active:cursor-grabbing transition-all relative shrink-0"}> 
+        <div key={item.id} draggable onDragStart={(e) => onDragStartKanban(e, cIdx, item.id)} className={"group " + (item.color || 'bg-white') + " dark:bg-zinc-800 p-3 rounded-xl shadow-sm text-sm border border-transparent hover:border-indigo-400 dark:hover:border-indigo-500 cursor-grab active:cursor-grabbing transition-all relative shrink-0"}> 
             <EditableDiv className="w-full bg-transparent focus:outline-none text-slate-900 dark:text-white cursor-text" value={item.text} onChange={(e) => { const newCols = [...boardData.columns]; const iIdx = newCols[cIdx].items.findIndex(i => i.id === item.id); newCols[cIdx].items[iIdx].text = e.target.value; setBoardData({ ...boardData, columns: newCols }); }} /> 
             <div className="flex justify-between items-center mt-3 pt-2 border-t border-black/5 dark:border-white/5 opacity-0 group-hover:opacity-100 transition-opacity"> 
                 <div className="flex gap-1.5 z-10"> 
@@ -371,18 +383,18 @@ const BoardApp = ({ data, onUpdate }) => {
                 return (
                     <>
                         <ZoomControls />
-                        <div className="w-full h-full overflow-x-auto overflow-y-hidden bg-slate-50 dark:bg-slate-950 p-4 relative flex items-start custom-scrollbar bg-grid-pattern">
+                        <div className="w-full h-full overflow-x-auto overflow-y-hidden bg-slate-50 dark:bg-zinc-950 p-4 relative flex items-start custom-scrollbar bg-grid-pattern">
                             <div className="flex items-start gap-4 h-full capture-target min-w-max pb-4" style={{ zoom: zoomLevel }}>
                                 
-                                <div className="h-full pt-2 group/gap w-6 flex justify-center shrink-0"> <button onClick={() => addColumn(0)} className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/gap:opacity-100 text-slate-500 shadow-sm"> <Icons.Plus className="w-4 h-4" /> </button> </div>
+                                <div className="h-full pt-2 group/gap w-6 flex justify-center shrink-0"> <button onClick={() => addColumn(0)} className="w-6 h-6 rounded-full bg-slate-200 dark:bg-zinc-800 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/gap:opacity-100 text-slate-500 shadow-sm"> <Icons.Plus className="w-4 h-4" /> </button> </div>
                                 
                                 {boardData.columns.map((col, cIdx) => (
                                     <React.Fragment key={cIdx}>
-                                        <div className="relative w-80 flex-shrink-0 bg-slate-100 dark:bg-slate-900/90 rounded-2xl p-2.5 max-h-full flex flex-col shadow-sm group/col border border-slate-200 dark:border-slate-800" onDragOver={onDragOverKanban} onDrop={(e) => onDropKanban(e, cIdx)}>
-                                            <div className="font-bold text-slate-700 dark:text-slate-200 px-2 py-2 flex justify-between items-center mb-1"> 
-                                                <input className="bg-transparent font-bold focus:bg-white dark:focus:bg-slate-800 focus:outline-none rounded px-1.5 py-0.5 w-full mr-2 dark:text-white text-base transition-colors" value={col.title} onChange={(e) => { const newCols = [...boardData.columns]; newCols[cIdx].title = e.target.value; setBoardData({ ...boardData, columns: newCols }); }} /> 
+                                        <div className="relative w-80 flex-shrink-0 bg-slate-100 dark:bg-zinc-900/90 rounded-2xl p-2.5 max-h-full flex flex-col shadow-sm group/col border border-slate-200 dark:border-zinc-800" onDragOver={onDragOverKanban} onDrop={(e) => onDropKanban(e, cIdx)}>
+                                            <div className="font-bold text-slate-700 dark:text-zinc-200 px-2 py-2 flex justify-between items-center mb-1 shrink-0"> 
+                                                <input className="bg-transparent font-bold focus:bg-white dark:focus:bg-zinc-800 focus:outline-none rounded px-1.5 py-0.5 w-full mr-2 dark:text-white text-base transition-colors" value={col.title} onChange={(e) => { const newCols = [...boardData.columns]; newCols[cIdx].title = e.target.value; setBoardData({ ...boardData, columns: newCols }); }} /> 
                                                 <div className="flex items-center gap-1 z-10 shrink-0"> 
-                                                    <span className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold px-2 py-0.5 rounded-full">{col.items.length}</span> 
+                                                    <span className="bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 text-xs font-bold px-2 py-0.5 rounded-full">{col.items.length}</span> 
                                                     <button onClick={() => { const newCols = [...boardData.columns]; newCols.splice(cIdx, 1); setBoardData({ ...boardData, columns: newCols }); }} className="text-slate-400 hover:text-red-500 opacity-0 group-hover/col:opacity-100 transition-opacity p-1"><Icons.Trash className="w-3.5 h-3.5"/></button> 
                                                 </div> 
                                             </div>
@@ -391,43 +403,46 @@ const BoardApp = ({ data, onUpdate }) => {
                                                 {boardData.useGroups ? (
                                                     boardData.groups.map((group, gIdx) => {
                                                         const groupItems = col.items.filter(i => i.groupId === group.id);
+                                                        // Force uncollapse if exporting snapshot
+                                                        const isCollapsed = !isExporting && collapsedGroups[cIdx + '-' + group.id];
+
                                                         return (
-                                                            <div key={group.id} className={"flex flex-col rounded-xl border border-transparent transition-colors " + (cIdx === 0 ? 'bg-white/50 dark:bg-slate-800/30 p-1.5' : '')} onDragOver={onDragOverKanban} onDrop={(e) => onDropKanban(e, cIdx, group.id)}>
+                                                            <div key={group.id} className={"flex flex-col rounded-xl border border-transparent transition-colors " + (cIdx === 0 ? 'bg-white/60 dark:bg-zinc-800/50 p-1.5' : '')} onDragOver={onDragOverKanban} onDrop={(e) => onDropKanban(e, cIdx, group.id)}>
                                                                 
-                                                                <div className="flex items-center justify-between mb-2 px-1 group/header">
+                                                                <div className="flex items-center justify-between mb-2 px-1 group/header relative">
                                                                     <div className="flex items-center gap-1.5 overflow-hidden">
-                                                                        <button onClick={() => updateGroup(group.id, { isCollapsed: !group.isCollapsed })} className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded shrink-0">
-                                                                            {group.isCollapsed ? <Icons.ChevronRight className="w-4 h-4"/> : <Icons.ChevronDown className="w-4 h-4"/>}
+                                                                        <button onClick={() => toggleCollapse(cIdx, group.id)} className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 rounded shrink-0 transition-colors">
+                                                                            {isCollapsed ? <Icons.ChevronRight className="w-4 h-4"/> : <Icons.ChevronDown className="w-4 h-4"/>}
                                                                         </button>
-                                                                        <div className={"w-2.5 h-2.5 rounded-full shrink-0 shadow-sm " + group.color}></div>
+                                                                        <div className={"w-3 h-3 rounded-full shrink-0 shadow-sm " + (group.color || 'bg-indigo-400')}></div>
                                                                         {cIdx === 0 ? (
-                                                                            <input className="bg-transparent focus:bg-white dark:focus:bg-slate-800 rounded px-1 focus:outline-none text-sm font-semibold text-slate-700 dark:text-slate-300 w-full min-w-0 truncate" value={group.title} onChange={e => updateGroup(group.id, { title: e.target.value })} />
+                                                                            <input className="bg-transparent focus:bg-white dark:focus:bg-zinc-900 rounded px-1 focus:outline-none text-sm font-semibold text-slate-700 dark:text-zinc-200 w-full min-w-0 truncate" value={group.title} onChange={e => updateGroup(group.id, { title: e.target.value })} />
                                                                         ) : (
-                                                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate px-1">{group.title}</span>
+                                                                            <span className="text-sm font-semibold text-slate-700 dark:text-zinc-200 truncate px-1">{group.title}</span>
                                                                         )}
                                                                     </div>
                                                                     
                                                                     <div className="flex items-center gap-1 shrink-0 ml-2">
                                                                         {cIdx === 0 && (
-                                                                            <div className="hidden group-hover/header:flex items-center gap-1 mr-1">
-                                                                                <button onClick={() => updateGroup(group.id, { color: 'bg-rose-400' })} className="w-2.5 h-2.5 rounded-full bg-rose-400 hover:scale-125 transition-transform"></button>
-                                                                                <button onClick={() => updateGroup(group.id, { color: 'bg-indigo-400' })} className="w-2.5 h-2.5 rounded-full bg-indigo-400 hover:scale-125 transition-transform"></button>
-                                                                                <button onClick={() => updateGroup(group.id, { color: 'bg-emerald-400' })} className="w-2.5 h-2.5 rounded-full bg-emerald-400 hover:scale-125 transition-transform"></button>
-                                                                                <button onClick={() => updateGroup(group.id, { color: 'bg-amber-400' })} className="w-2.5 h-2.5 rounded-full bg-amber-400 hover:scale-125 transition-transform"></button>
-                                                                                <button onClick={() => deleteGroup(group.id)} className="ml-1 text-slate-300 hover:text-red-500"><Icons.Trash className="w-3 h-3"/></button>
+                                                                            <div className="hidden group-hover/header:flex absolute right-8 top-0 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 p-1.5 rounded-lg shadow-xl z-20 items-center gap-1.5 flex-wrap w-40 animate-slide-up">
+                                                                                {GROUP_COLORS.map(c => (
+                                                                                    <button key={c} onClick={() => updateGroup(group.id, { color: c })} className={"w-4 h-4 rounded-full hover:scale-125 transition-transform shadow-sm " + c}></button>
+                                                                                ))}
+                                                                                <div className="w-px h-4 bg-slate-200 dark:bg-zinc-600 mx-1"></div>
+                                                                                <button onClick={() => deleteGroup(group.id)} className="text-slate-400 hover:text-red-500"><Icons.Trash className="w-4 h-4"/></button>
                                                                             </div>
                                                                         )}
-                                                                        <span className="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{groupItems.length}</span>
+                                                                        <span className="bg-slate-200 dark:bg-zinc-700 text-slate-500 dark:text-zinc-400 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{groupItems.length}</span>
                                                                     </div>
                                                                 </div>
 
-                                                                {!group.isCollapsed && (
+                                                                {!isCollapsed && (
                                                                     <div className="flex flex-col gap-2.5 min-h-[40px] rounded-lg p-1">
                                                                         {groupItems.map(item => renderKanbanCard(item, cIdx))}
-                                                                        <button onClick={() => addCard(cIdx, group.id)} className="w-full py-1.5 text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-lg transition-colors border border-dashed border-slate-300 dark:border-slate-700">+ Add Card</button>
+                                                                        <button onClick={() => addCard(cIdx, group.id)} className="w-full py-1.5 text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 rounded-lg transition-colors border border-dashed border-slate-300 dark:border-zinc-700">+ Add Card</button>
                                                                     </div>
                                                                 )}
-                                                                {group.isCollapsed && <div className="h-px bg-slate-200 dark:bg-slate-800 mx-2 mt-1 mb-2"></div>}
+                                                                {isCollapsed && <div className={"h-px mx-2 mt-1 mb-2 " + (group.color || 'bg-indigo-400') + " opacity-50"}></div>}
                                                             </div>
                                                         )
                                                     })
@@ -438,14 +453,14 @@ const BoardApp = ({ data, onUpdate }) => {
                                                 )}
                                                 
                                                 {!boardData.useGroups && (
-                                                    <button onClick={() => addCard(cIdx)} className="w-full py-2.5 mt-1 text-sm font-medium text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-colors border border-dashed border-slate-300 dark:border-slate-700">+ Add Card</button>
+                                                    <button onClick={() => addCard(cIdx)} className="w-full py-2.5 mt-1 text-sm font-medium text-slate-500 hover:bg-slate-200 dark:hover:bg-zinc-800 rounded-xl transition-colors border border-dashed border-slate-300 dark:border-zinc-700">+ Add Card</button>
                                                 )}
                                                 {boardData.useGroups && cIdx === 0 && (
                                                     <button onClick={addGroup} className="w-full py-2.5 mt-2 text-sm font-medium text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors border border-dashed border-indigo-200 dark:border-indigo-800/50">+ Add Group</button>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="h-full pt-2 group/gap w-6 flex justify-center shrink-0"> <button onClick={() => addColumn(cIdx + 1)} className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/gap:opacity-100 text-slate-500 shadow-sm"> <Icons.Plus className="w-4 h-4" /> </button> </div>
+                                        <div className="h-full pt-2 group/gap w-6 flex justify-center shrink-0"> <button onClick={() => addColumn(cIdx + 1)} className="w-6 h-6 rounded-full bg-slate-200 dark:bg-zinc-800 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover/gap:opacity-100 text-slate-500 shadow-sm"> <Icons.Plus className="w-4 h-4" /> </button> </div>
                                     </React.Fragment>
                                 ))}
                             </div>
@@ -456,14 +471,14 @@ const BoardApp = ({ data, onUpdate }) => {
                 return ( 
                     <>
                         <ZoomControls />
-                        <div className="w-full h-full overflow-auto bg-slate-50 dark:bg-slate-950 p-6 bg-grid-pattern">
+                        <div className="w-full h-full overflow-auto bg-slate-50 dark:bg-zinc-950 p-6 bg-grid-pattern">
                             <div style={{ zoom: zoomLevel }}>
                                 <div className={"grid gap-5 w-full capture-target min-w-[800px] " + (boardData.cols === 3 ? 'grid-cols-3' : 'grid-cols-2')}> 
                                     {boardData.grid.map((area, idx) => ( 
-                                        <div key={idx} className={(area.color || 'bg-white') + " dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 flex flex-col shadow-sm transition-colors text-slate-900 dark:text-slate-100"}> 
-                                            <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4 text-lg flex items-center gap-2"> <span className="w-2.5 h-2.5 rounded-full bg-current opacity-50"></span> {area.title} </h3> 
+                                        <div key={idx} className={(area.color || 'bg-white') + " dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-2xl p-6 flex flex-col shadow-sm transition-colors text-slate-900 dark:text-zinc-100"}> 
+                                            <h3 className="font-bold text-slate-800 dark:text-zinc-200 mb-4 text-lg flex items-center gap-2"> <span className="w-2.5 h-2.5 rounded-full bg-current opacity-50"></span> {area.title} </h3> 
                                             <EditableDiv 
-                                                className="w-full bg-white/50 dark:bg-slate-900/50 border-0 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 dark:text-slate-200 text-base leading-relaxed" 
+                                                className="w-full bg-white/50 dark:bg-zinc-900/50 border-0 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 dark:text-zinc-200 text-base leading-relaxed" 
                                                 value={area.content} 
                                                 onChange={(e) => handleGridChange(idx, e.target.value)} 
                                                 placeholder="Type here..." 
@@ -489,21 +504,21 @@ const BoardApp = ({ data, onUpdate }) => {
                  return ( 
                     <>
                         <ZoomControls />
-                        <div className="h-full w-full bg-slate-50 dark:bg-slate-900 p-6 flex flex-col overflow-auto bg-grid-pattern"> 
+                        <div className="h-full w-full bg-slate-50 dark:bg-zinc-950 p-6 flex flex-col overflow-auto bg-grid-pattern"> 
                             <div className="capture-target min-w-[900px]" style={{ zoom: zoomLevel }}>
                                 <h3 className="text-2xl font-bold mb-6 text-center text-slate-800 dark:text-white">Risk Matrix</h3> 
                                 <div className="grid grid-cols-[120px_repeat(5,_1fr)] gap-2 auto-rows-min">
                                     <div className="flex items-end justify-end p-2 font-bold text-slate-500 text-xs">Likelihood \\ Impact</div>
-                                    {impacts.map(i => <div key={i} className="flex items-center justify-center p-2 font-bold text-slate-700 dark:text-slate-300 rounded-lg text-center">{i}</div>)}
+                                    {impacts.map(i => <div key={i} className="flex items-center justify-center p-2 font-bold text-slate-700 dark:text-zinc-300 rounded-lg text-center">{i}</div>)}
                                     {likelihoods.map((l, rowIdx) => (
                                         <React.Fragment key={l}>
-                                            <div className="flex items-center justify-end p-2 font-bold text-slate-700 dark:text-slate-300 rounded-lg text-right">{l}</div>
+                                            <div className="flex items-center justify-end p-2 font-bold text-slate-700 dark:text-zinc-300 rounded-lg text-right">{l}</div>
                                             {riskConfig[rowIdx].map((conf, colIdx) => {
                                                 const flatIdx = rowIdx * 5 + colIdx; 
                                                 const cellData = boardData.cells ? boardData.cells[flatIdx] : '';
                                                 return (
                                                     <div key={flatIdx} className={conf.bg + " border-2 " + conf.bd + " dark:bg-opacity-20 rounded-lg p-2 min-h-[100px] shadow-sm flex flex-col transition-colors"}>
-                                                        <EditableDiv className="w-full bg-transparent p-1 text-sm font-medium placeholder-black/30 dark:placeholder-white/30 text-slate-900 dark:text-slate-100 focus:outline-none" placeholder="Add risk..." value={cellData} onChange={(e) => { const newCells = [...(boardData.cells || Array(25).fill(''))]; newCells[flatIdx] = e.target.value; setBoardData({...boardData, cells: newCells}); }} />
+                                                        <EditableDiv className="w-full bg-transparent p-1 text-sm font-medium placeholder-black/30 dark:placeholder-white/30 text-slate-900 dark:text-zinc-100 focus:outline-none" placeholder="Add risk..." value={cellData} onChange={(e) => { const newCells = [...(boardData.cells || Array(25).fill(''))]; newCells[flatIdx] = e.target.value; setBoardData({...boardData, cells: newCells}); }} />
                                                     </div>
                                                 )
                                             })}
@@ -518,15 +533,15 @@ const BoardApp = ({ data, onUpdate }) => {
             case 'table': return ( 
                 <>
                     <ZoomControls />
-                    <div className="p-6 overflow-auto h-full bg-slate-50 dark:bg-slate-900 flex flex-col bg-grid-pattern"> 
+                    <div className="p-6 overflow-auto h-full bg-slate-50 dark:bg-zinc-950 flex flex-col bg-grid-pattern"> 
                         <div className="capture-target min-w-max" style={{ zoom: zoomLevel }}>
-                            <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm bg-white dark:bg-slate-800"> 
-                                <thead> <tr> {boardData.columns.map((col, i) => <th key={i} className="border-b border-slate-200 dark:border-slate-700 p-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 font-semibold text-left uppercase text-sm">{col}</th>)} </tr> </thead> 
-                                <tbody> {boardData.rows.map((row, rIdx) => ( <tr key={rIdx} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"> {row.map((cell, cIdx) => ( <td key={cIdx} className="border-b border-slate-100 dark:border-slate-800 p-2 min-w-[200px] align-top"> 
+                            <table className="w-full border-collapse rounded-lg overflow-hidden shadow-sm bg-white dark:bg-zinc-800"> 
+                                <thead> <tr> {boardData.columns.map((col, i) => <th key={i} className="border-b border-slate-200 dark:border-zinc-700 p-4 bg-slate-100 dark:bg-zinc-700 text-slate-600 dark:text-zinc-200 font-semibold text-left uppercase text-sm">{col}</th>)} </tr> </thead> 
+                                <tbody> {boardData.rows.map((row, rIdx) => ( <tr key={rIdx} className="group hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors"> {row.map((cell, cIdx) => ( <td key={cIdx} className="border-b border-slate-100 dark:border-zinc-800 p-2 min-w-[200px] align-top"> 
                                     <EditableDiv className="w-full p-2 bg-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:text-white rounded h-full text-sm leading-relaxed" value={cell} onChange={(e) => { const newRows = [...boardData.rows]; newRows[rIdx][cIdx] = e.target.value; setBoardData({...boardData, rows: newRows}); }} /> 
                                 </td> ))} </tr> ))} </tbody> 
                             </table> 
-                            <div className="flex gap-3 mt-6"> <button onClick={() => setBoardData({...boardData, rows: [...boardData.rows, Array(boardData.columns.length).fill('')]})} className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors flex items-center gap-1"><Icons.Plus className="w-4 h-4"/> Add Row</button> <button onClick={() => setSipocFlow(!sipocFlow)} className="px-4 py-2 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors"> {sipocFlow ? 'Hide Flow' : 'Generate Flow'} </button> </div> {sipocFlow && ( <div className="mt-8 p-5 bg-white dark:bg-slate-800 rounded-xl shadow-inner border border-slate-100 dark:border-slate-700 overflow-x-auto min-w-max"> <h4 className="font-bold mb-4 text-slate-600 dark:text-slate-300">Process Flow</h4> <div className="flex items-center gap-4"> {boardData.rows.map((row, i) => row[2] && ( <div key={i} className="flex items-center gap-4"> <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 p-3 rounded-lg shadow-sm text-sm w-48 text-center text-slate-700 dark:text-slate-200 font-medium">{row[2]}</div> {i < boardData.rows.length - 1 && boardData.rows[i+1][2] && <div className="text-slate-400 font-bold">→</div>} </div> ))} </div> </div> )} 
+                            <div className="flex gap-3 mt-6"> <button onClick={() => setBoardData({...boardData, rows: [...boardData.rows, Array(boardData.columns.length).fill('')]})} className="px-4 py-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors flex items-center gap-1"><Icons.Plus className="w-4 h-4"/> Add Row</button> <button onClick={() => setSipocFlow(!sipocFlow)} className="px-4 py-2 bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors"> {sipocFlow ? 'Hide Flow' : 'Generate Flow'} </button> </div> {sipocFlow && ( <div className="mt-8 p-5 bg-white dark:bg-zinc-800 rounded-xl shadow-inner border border-slate-100 dark:border-zinc-700 overflow-x-auto min-w-max"> <h4 className="font-bold mb-4 text-slate-600 dark:text-zinc-300">Process Flow</h4> <div className="flex items-center gap-4"> {boardData.rows.map((row, i) => row[2] && ( <div key={i} className="flex items-center gap-4"> <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 p-3 rounded-lg shadow-sm text-sm w-48 text-center text-slate-700 dark:text-zinc-200 font-medium">{row[2]}</div> {i < boardData.rows.length - 1 && boardData.rows[i+1][2] && <div className="text-slate-400 font-bold">→</div>} </div> ))} </div> </div> )} 
                         </div>
                     </div> 
                 </>
@@ -534,7 +549,7 @@ const BoardApp = ({ data, onUpdate }) => {
             default: return <div>Unknown Board</div>;
         }
     };
-    return ( <div className="h-full w-full bg-white dark:bg-slate-900 overflow-hidden flex flex-col relative"> <div className="absolute bottom-6 left-6 z-10"> <InfoButton text={INSTRUCTIONS[boardData.subType] || "No instructions."} /> </div> {renderBoard()} </div> );
+    return ( <div className="h-full w-full bg-white dark:bg-zinc-950 overflow-hidden flex flex-col relative"> <div className="absolute bottom-6 left-6 z-10"> <InfoButton text={INSTRUCTIONS[boardData.subType] || "No instructions."} /> </div> {renderBoard()} </div> );
 };
 
 // --- WRAPPER WITH HEADER FOR EXPORT LOGIC ---
@@ -542,6 +557,7 @@ const BoardContainer = ({ board, onUpdate, onBack }) => {
     const contentRef = useRef(null);
     const downloadBtnRef = useRef(null);
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -612,55 +628,65 @@ const BoardContainer = ({ board, onUpdate, onBack }) => {
 
         if (format === 'image') {
             if (!window.htmlToImage) { alert("Please wait a moment for the export library to load."); return; }
-            try {
-                let source = contentRef.current.querySelector('.capture-target');
-                if (!source) source = contentRef.current; 
+            
+            // Trigger expand-all state across the app
+            setIsExporting(true);
 
-                const clone = deepCloneWithValues(source);
-                const container = document.createElement('div');
-                container.style.position = 'fixed'; container.style.top = '-10000px'; container.style.left = '-10000px'; container.style.zIndex = '-1';
-                
-                const isDark = document.documentElement.classList.contains('dark');
-                container.style.background = isDark ? '#0f172a' : '#f8fafc';
-                container.style.color = isDark ? '#f1f5f9' : '#0f172a';
-                
-                clone.style.transform = 'none'; clone.style.zoom = '1'; clone.style.width = 'auto'; clone.style.height = 'auto'; clone.style.overflow = 'visible';
-                
-                if (['kanban', 'scrum'].includes(board.subType)) { clone.style.width = 'max-content'; clone.style.padding = '30px'; } 
-                else if (['grid', 'swot', 'eisenhower', 'rule10', 'risk'].includes(board.subType)) { clone.style.width = '1200px'; clone.style.padding = '40px'; } 
-                else if (board.subType === 'table' || board.subType === 'sipoc') { clone.style.width = 'max-content'; clone.style.padding = '30px'; } 
-                else if (['mindmap', 'pert'].includes(board.subType)) {
-                    const nodes = innerData.nodes || [];
-                    if (nodes.length > 0) {
-                        const xs = nodes.map(n => n.x); const ys = nodes.map(n => n.y);
-                        clone.style.width = (Math.max(...xs) + 300) + 'px'; clone.style.height = (Math.max(...ys) + 200) + 'px';
+            setTimeout(async () => {
+                try {
+                    let source = contentRef.current.querySelector('.capture-target');
+                    if (!source) source = contentRef.current; 
+
+                    const clone = deepCloneWithValues(source);
+                    const container = document.createElement('div');
+                    container.style.position = 'fixed'; container.style.top = '-10000px'; container.style.left = '-10000px'; container.style.zIndex = '-1';
+                    
+                    const isDark = document.documentElement.classList.contains('dark');
+                    container.style.background = isDark ? '#09090b' : '#f8fafc'; // Matches zinc-950 / slate-50
+                    container.style.color = isDark ? '#f4f4f5' : '#09090b';
+                    
+                    clone.style.transform = 'none'; clone.style.zoom = '1'; clone.style.width = 'auto'; clone.style.height = 'auto'; clone.style.overflow = 'visible';
+                    
+                    if (['kanban', 'scrum'].includes(board.subType)) { clone.style.width = 'max-content'; clone.style.padding = '30px'; } 
+                    else if (['grid', 'swot', 'eisenhower', 'rule10', 'risk'].includes(board.subType)) { clone.style.width = '1200px'; clone.style.padding = '40px'; } 
+                    else if (board.subType === 'table' || board.subType === 'sipoc') { clone.style.width = 'max-content'; clone.style.padding = '30px'; } 
+                    else if (['mindmap', 'pert'].includes(board.subType)) {
+                        const nodes = innerData.nodes || [];
+                        if (nodes.length > 0) {
+                            const xs = nodes.map(n => n.x); const ys = nodes.map(n => n.y);
+                            clone.style.width = (Math.max(...xs) + 300) + 'px'; clone.style.height = (Math.max(...ys) + 200) + 'px';
+                        }
                     }
-                }
 
-                document.body.appendChild(container);
-                container.appendChild(clone);
-                await new Promise(resolve => setTimeout(resolve, 150));
+                    document.body.appendChild(container);
+                    container.appendChild(clone);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 200));
 
-                const dataUrl = await window.htmlToImage.toPng(clone, { 
-                    pixelRatio: 2, backgroundColor: isDark ? '#0f172a' : '#f8fafc', style: { transform: 'none' }
-                });
+                    const dataUrl = await window.htmlToImage.toPng(clone, { 
+                        pixelRatio: 2, backgroundColor: isDark ? '#09090b' : '#f8fafc', style: { transform: 'none' }
+                    });
+                    
+                    document.body.removeChild(container);
+                    const link = document.createElement('a'); link.download = fileName + '.png'; link.href = dataUrl; link.click();
+                } catch (e) { alert("Image generation failed. " + e); }
                 
-                document.body.removeChild(container);
-                const link = document.createElement('a'); link.download = fileName + '.png'; link.href = dataUrl; link.click();
-            } catch (e) { alert("Image generation failed. " + e); }
+                // Revert expansion correctly
+                setIsExporting(false);
+            }, 300);
         }
     };
 
     return (
-        <div className="flex flex-col w-full h-full bg-slate-50 dark:bg-slate-900 transition-colors">
-            <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur shrink-0 shadow-sm z-50">
+        <div className="flex flex-col w-full h-full bg-slate-50 dark:bg-zinc-950 transition-colors">
+            <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur shrink-0 shadow-sm z-50">
                 <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
-                    <button onClick={onBack} className="p-2 md:p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-2 font-medium text-sm flex-shrink-0">
+                    <button onClick={onBack} className="p-2 md:p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-300 transition-colors flex items-center gap-2 font-medium text-sm flex-shrink-0">
                         <Icons.ArrowLeft className="w-4 h-4"/><span className="hidden md:inline">Back</span>
                     </button>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Icons.Boards className="w-5 h-5 flex-shrink-0" />
-                        <input className="bg-transparent focus:bg-slate-100 dark:focus:bg-slate-800 rounded px-2 py-1 min-w-0 w-full max-w-sm focus:outline-none text-lg font-bold text-slate-800 dark:text-slate-200 truncate transition-colors" value={board.title} onChange={(e) => onUpdate({ title: e.target.value })} />
+                        <Icons.Boards className="w-5 h-5 flex-shrink-0 text-indigo-500" />
+                        <input className="bg-transparent focus:bg-slate-100 dark:focus:bg-zinc-800 rounded px-2 py-1 min-w-0 w-full max-w-sm focus:outline-none text-lg font-bold text-slate-800 dark:text-zinc-100 truncate transition-colors" value={board.title} onChange={(e) => onUpdate({ title: e.target.value })} />
                     </div>
                 </div>
 
@@ -670,19 +696,19 @@ const BoardContainer = ({ board, onUpdate, onBack }) => {
                     </button>
                     
                     {showDownloadMenu && (
-                        <div className="absolute top-full right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl p-1 w-52 flex flex-col gap-1 z-[100] animate-slide-up origin-top-right">
-                            <button onClick={() => downloadFile('json')} className="text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 font-medium transition-colors">Save Board Data (.json)</button>
-                            <button onClick={() => downloadFile('image')} className="text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 font-medium transition-colors">Export to Image (.png)</button>
-                            <button onClick={() => downloadFile('markdown')} className="text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 font-medium transition-colors">Save as Markdown (.md)</button>
-                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
-                            <button onClick={() => downloadFile('copy')} className="text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 font-medium transition-colors">Copy Text to Clipboard</button>
+                        <div className="absolute top-full right-0 mt-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-xl rounded-xl p-1 w-52 flex flex-col gap-1 z-[100] animate-slide-up origin-top-right">
+                            <button onClick={() => downloadFile('json')} className="text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-200 font-medium transition-colors">Save Board Data (.json)</button>
+                            <button onClick={() => downloadFile('image')} className="text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-200 font-medium transition-colors">Export to Image (.png)</button>
+                            <button onClick={() => downloadFile('markdown')} className="text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-200 font-medium transition-colors">Save as Markdown (.md)</button>
+                            <div className="h-px bg-slate-100 dark:bg-zinc-700 my-1"></div>
+                            <button onClick={() => downloadFile('copy')} className="text-left px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-200 font-medium transition-colors">Copy Text to Clipboard</button>
                         </div>
                     )}
                 </div>
             </div>
             
             <div className="flex-1 overflow-hidden relative" ref={contentRef}>
-                <BoardApp data={board.data} onUpdate={(newData) => onUpdate({ board: { ...board, data: { ...board.data, ...newData } } })} />
+                <BoardApp data={board.data} onUpdate={(newData) => onUpdate({ board: { ...board, data: { ...board.data, ...newData } } })} isExporting={isExporting} />
             </div>
         </div>
     );
@@ -766,51 +792,51 @@ const ProductivityBoards = ({ data, onUpdate, instanceId, title }) => {
     }
 
     return (
-        <div className="prod-board-app bg-slate-50 dark:bg-slate-900 transition-colors overflow-y-auto relative">
+        <div className="prod-board-app bg-slate-50 dark:bg-zinc-950 transition-colors relative flex flex-col">
             <style dangerouslySetInnerHTML={{ __html: APP_STYLES }} />
             <input type="file" ref={fileInputRef} accept=".json" className="hidden" onChange={handleImport} />
             
-            <div className="absolute inset-0 bg-grid-pattern opacity-60 pointer-events-none"></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent dark:from-slate-900/60 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-grid-pattern opacity-50 pointer-events-none"></div>
 
-            <div className="relative z-10 flex flex-col min-h-full">
-                <header className="flex flex-col sm:flex-row items-center justify-between px-6 sm:px-10 py-8 gap-6 w-full max-w-7xl mx-auto">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                            <Icons.Boards className="w-8 h-8 text-indigo-500" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">Boards</h1>
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Select a template to begin</p>
-                        </div>
+            <header className="relative z-10 flex flex-col sm:flex-row items-center justify-between px-6 sm:px-10 py-8 gap-6 w-full max-w-7xl mx-auto shrink-0">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800">
+                        <Icons.Boards className="w-8 h-8 text-indigo-500" />
                     </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <button onClick={() => fileInputRef.current.click()} className="flex-1 sm:flex-none px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:shadow-md hover:border-indigo-300 transition-all text-center">
-                            Import JSON
-                        </button>
-                        <button onClick={() => document.documentElement.classList.toggle('dark')} className="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors flex-shrink-0 shadow-inner">
-                            <Icons.Theme className="w-5 h-5" />
-                        </button>
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-slate-800 dark:text-zinc-100 tracking-tight">Boards</h1>
+                        <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mt-1">Select a template to begin</p>
                     </div>
-                </header>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button onClick={() => fileInputRef.current.click()} className="flex-1 sm:flex-none px-5 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-slate-700 dark:text-zinc-300 hover:shadow-md hover:border-indigo-300 transition-all text-center">
+                        Import JSON
+                    </button>
+                    <button onClick={() => document.documentElement.classList.toggle('dark')} className="p-2.5 rounded-xl bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-300 dark:hover:bg-zinc-700 transition-colors flex-shrink-0 shadow-inner">
+                        <Icons.Theme className="w-5 h-5" />
+                    </button>
+                </div>
+            </header>
 
-                <main className="px-6 sm:px-10 pb-12 flex-1 w-full max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"> 
-                        {Object.entries(BOARD_TEMPLATES).map(([key, tpl]) => ( 
-                            <button key={key} onClick={() => createNewBoard(key)} className="flex flex-col p-6 rounded-3xl bg-white/70 dark:bg-slate-800/60 backdrop-blur-md shadow-sm hover:shadow-xl border border-slate-200 dark:border-slate-700/80 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all duration-300 text-left group hover:-translate-y-1.5 overflow-hidden relative"> 
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-900/20 rounded-full blur-3xl -mr-10 -mt-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                                <div className="flex items-center gap-4 mb-3 relative z-10"> 
-                                    <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-slate-900 group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300 text-indigo-500 border border-indigo-100 dark:border-slate-800 group-hover:border-transparent"> 
-                                        {key === 'kanban' || key === 'scrum' ? <Icons.Boards className="w-6 h-6"/> : key === 'mindmap' || key === 'pert' ? <div className="w-6 h-6 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2.5 h-2.5 bg-current rounded-full"/></div> : <Icons.Boards className="w-6 h-6"/>} 
-                                    </div> 
-                                    <h3 className="font-bold text-lg text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{tpl.title}</h3> 
+            <main className="relative z-10 px-6 sm:px-10 pb-12 flex-1 w-full max-w-7xl mx-auto overflow-y-auto custom-scrollbar">
+                {/* Responsive container grid auto-adjusting to tab size */}
+                <div className="grid gap-6 pb-20" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}> 
+                    {Object.entries(BOARD_TEMPLATES).map(([key, tpl]) => ( 
+                        <button key={key} onClick={() => createNewBoard(key)} className="group relative p-[1px] rounded-3xl bg-gradient-to-b from-white to-slate-100 dark:from-zinc-800 dark:to-zinc-900 shadow-sm hover:shadow-xl transition-all duration-300 text-left border border-slate-200 dark:border-zinc-700 hover:border-indigo-400 dark:hover:border-indigo-500 overflow-hidden outline-none focus:ring-4 focus:ring-indigo-500/20 active:scale-95">
+                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-purple-500/0 group-hover:from-indigo-500/5 group-hover:to-purple-500/5 dark:group-hover:from-indigo-500/10 dark:group-hover:to-purple-500/10 transition-colors duration-500 pointer-events-none"></div>
+                            <div className="relative p-6 bg-white/70 dark:bg-zinc-900/80 rounded-[23px] h-full flex flex-col gap-4 backdrop-blur-md">
+                                <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner border border-indigo-100/50 dark:border-indigo-500/20"> 
+                                    {key === 'kanban' || key === 'scrum' ? <Icons.Boards className="w-7 h-7"/> : key === 'mindmap' || key === 'pert' ? <div className="w-7 h-7 rounded-full border-2 border-current flex items-center justify-center"><div className="w-2.5 h-2.5 bg-current rounded-full"/></div> : <Icons.Boards className="w-7 h-7"/>} 
                                 </div> 
-                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed relative z-10">{tpl.desc}</p> 
-                            </button> 
-                        ))} 
-                    </div>
-                </main>
-            </div>
+                                <div>
+                                    <h3 className="font-extrabold text-xl text-slate-800 dark:text-zinc-100 mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{tpl.title}</h3> 
+                                    <p className="text-sm text-slate-500 dark:text-zinc-400 leading-relaxed font-medium">{tpl.desc}</p> 
+                                </div>
+                            </div>
+                        </button> 
+                    ))} 
+                </div>
+            </main>
         </div>
     );
 };
