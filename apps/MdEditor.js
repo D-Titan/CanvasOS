@@ -677,24 +677,28 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
         node.classList.add('md-native-print-target');
         
         // Highly aggressive Print styles explicitly designed to fix webkit's table breaking logic
-        // Also strictly forces Dark Mode overriding so PDF is always clean Light Mode
+        // UPDATED: Fixed color rendering syntax highlighting and text selection behavior
         const printStyle = document.createElement('style');
         printStyle.innerHTML = \`
-            .md-native-print-target { position: absolute; top: 0; left: 0; width: 100vw; min-height: 100vh; background: white !important; color: black !important; z-index: 999999; padding: 40px; box-sizing: border-box; display: block !important; } 
+            .md-native-print-target { 
+                position: absolute; top: 0; left: 0; width: 100vw; min-height: 100vh; 
+                background: white !important; color: black; z-index: 999999; padding: 40px; box-sizing: border-box; display: block !important; 
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; 
+                user-select: text !important; -webkit-user-select: text !important;
+            } 
             @media print { 
                 body > *:not(.md-native-print-target) { display: none !important; } 
                 .md-native-print-target { position: static; width: 100%; min-height: auto; padding: 0; } 
                 .code-copy-btn, .toggle-icon, .table-toolbar { display: none !important; } 
                 .code-content { display: block !important; } 
                 
-                /* Strict Force Light Mode for Print */
-                .md-native-print-target, .md-native-print-target * { color: black !important; }
+                /* Strict Force Light Mode Elements for Print, leaving token classes alone */
                 .md-native-print-target a { color: #0366d6 !important; }
                 .md-native-print-target blockquote { border-left-color: #dfe2e5 !important; background: #f9fafb !important; color: #6a737d !important; }
-                .md-native-print-target .code-block-wrapper { background: #f8fafc !important; border-color: #e2e8f0 !important; }
+                .md-native-print-target .code-block-wrapper { background: #f8fafc !important; border-color: #e2e8f0 !important; break-inside: avoid; page-break-inside: avoid; }
                 .md-native-print-target .code-block-wrapper > div:first-child { background: #f1f5f9 !important; border-bottom-color: #e2e8f0 !important; }
                 .md-native-print-target .code-block-wrapper > div:first-child span { color: #334155 !important; }
-                .md-native-print-target pre, .md-native-print-target code { color: #333 !important; }
+                .md-native-print-target pre { background: transparent !important; }
                 
                 /* Table PDF Break Fixes */
                 .markdown-body table { 
