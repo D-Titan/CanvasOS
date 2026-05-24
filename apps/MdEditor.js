@@ -665,75 +665,88 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
         showNotification("Exported as .md successfully!");
     };
 
+    // REWRITTEN: Iframe-based PDF generator. 
+    // This perfectly bypasses Chrome's DOM-flattening issue allowing 100% text selectability.
     const exportPDF = () => {
         if (!previewRef.current) return;
         
-        const node = previewRef.current;
-        const parent = node.parentNode;
-        const placeholder = document.createElement('div');
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.border = 'none';
+        iframe.style.zIndex = '-9999';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
         
-        parent.replaceChild(placeholder, node);
-        document.body.appendChild(node);
-        node.classList.add('md-native-print-target');
+        doc.write('<!DOCTYPE html><html><head><title>' + getCleanFilename('pdf').replace('.pdf', '') + '</title>');
         
-        // Highly aggressive Print styles explicitly designed to fix webkit's table breaking logic
-        // UPDATED: Fixed color rendering syntax highlighting and text selection behavior
-        const printStyle = document.createElement('style');
-        printStyle.innerHTML = \`
-            .md-native-print-target { 
-                position: absolute; top: 0; left: 0; width: 100vw; min-height: 100vh; 
-                background: white !important; color: black; z-index: 999999; padding: 40px; box-sizing: border-box; display: block !important; 
-                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; 
-                user-select: text !important; -webkit-user-select: text !important;
-            } 
-            @media print { 
-                body > *:not(.md-native-print-target) { display: none !important; } 
-                .md-native-print-target { position: static; width: 100%; min-height: auto; padding: 0; } 
+        // Clone all stylesheets from parent to retain Prism syntax coloring and Markdown fonts
+        const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+        styles.forEach(style => doc.write(style.outerHTML));
+
+        // Inject print-specific layout overrides
+        doc.write(\`
+            <style>
+                @page { margin: 20mm; }
+                body { 
+                    background: white !important; 
+                    margin: 0 !important; 
+                    padding: 0 !important;
+                    -webkit-print-color-adjust: exact !important; 
+                    print-color-adjust: exact !important;
+                }
+                
+                /* Hide UI elements */
                 .code-copy-btn, .toggle-icon, .table-toolbar { display: none !important; } 
                 .code-content { display: block !important; } 
                 
-                /* Strict Force Light Mode Elements for Print, leaving token classes alone */
-                .md-native-print-target a { color: #0366d6 !important; }
-                .md-native-print-target blockquote { border-left-color: #dfe2e5 !important; background: #f9fafb !important; color: #6a737d !important; }
-                .md-native-print-target .code-block-wrapper { background: #f8fafc !important; border-color: #e2e8f0 !important; break-inside: avoid; page-break-inside: avoid; }
-                .md-native-print-target .code-block-wrapper > div:first-child { background: #f1f5f9 !important; border-bottom-color: #e2e8f0 !important; }
-                .md-native-print-target .code-block-wrapper > div:first-child span { color: #334155 !important; }
-                .md-native-print-target pre { background: transparent !important; }
+                /* Force Light Mode structure, keeping specific Token colors intact */
+                .markdown-body { color: #333 !important; }
+                .markdown-body a { color: #0366d6 !important; }
+                .markdown-body blockquote { border-left-color: #dfe2e5 !important; background: #f9fafb !important; color: #6a737d !important; }
+                .markdown-body .code-block-wrapper { background: #f8fafc !important; border-color: #e2e8f0 !important; break-inside: avoid; page-break-inside: avoid; }
+                .markdown-body .code-block-wrapper > div:first-child { background: #f1f5f9 !important; border-bottom-color: #e2e8f0 !important; }
+                .markdown-body .code-block-wrapper > div:first-child span { color: #334155 !important; }
+                .markdown-body pre { background: transparent !important; }
                 
                 /* Table PDF Break Fixes */
                 .markdown-body table { 
                     page-break-inside: auto !important; 
                     border-collapse: collapse !important; 
                     border: 1px solid #cbd5e1 !important; 
-                    border-radius: 0 !important; 
                     width: 100% !important;
                     margin-bottom: 20px !important;
                 } 
-                .markdown-body tr { 
-                    page-break-inside: avoid !important; 
-                    page-break-after: auto !important; 
-                    break-inside: avoid !important;
-                } 
-                .markdown-body thead { display: table-header-group !important; } 
-                .markdown-body tfoot { display: table-footer-group !important; } 
-                .markdown-body td, .markdown-body th { 
-                    border: 1px solid #cbd5e1 !important; 
-                    page-break-inside: avoid !important; 
-                    break-inside: avoid !important;
-                    background: transparent !important;
-                }
-                .markdown-body th { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            }
-        \`;
-        document.head.appendChild(printStyle);
+                .markdown-body tr { page-break-inside: avoid !important; page-break-after: auto !important; } 
+                .markdown-body td, .markdown-body th { border: 1px solid #cbd5e1 !important; background: transparent !important; }
+                .markdown-body th { background-color: #f1f5f9 !important; }
+            </style>
+        \`);
+        doc.write('</head><body>');
+        // Wrap content inside the iframe identical to the parent DOM structure
+        doc.write('<div class="markdown-body" style="font-family: ' + previewFont.replace(/"/g, '&quot;') + ';">');
+        doc.write(previewRef.current.innerHTML);
+        doc.write('</div></body></html>');
+        doc.close();
 
+        // Allow time for the iframe DOM to mount fonts and stylesheets before initiating print
         setTimeout(() => {
-            window.print();
-            node.classList.remove('md-native-print-target');
-            document.body.removeChild(node);
-            parent.replaceChild(node, placeholder);
-            document.head.removeChild(printStyle);
-        }, 100); 
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (e) {
+                console.error("PDF Print error:", e);
+                showNotification("Print failed.", "error");
+            } finally {
+                // Ensure the iframe is destroyed cleanly after the user finishes the print dialog
+                setTimeout(() => {
+                    if (document.body.contains(iframe)) document.body.removeChild(iframe);
+                }, 1000); 
+            }
+        }, 500); 
     };
 
     const exportDOCX = async () => {
