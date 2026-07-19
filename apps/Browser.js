@@ -59,7 +59,7 @@ const BrowserApp = ({ data, onUpdate, instanceId }) => {
       return q.startsWith('http') ? q : 'https://' + q;
     }
 
-    return 'https://www.google.com/search?igu=1&q=' + encodeURIComponent(q);
+    return 'https://en.wikipedia.org/wiki/' + encodeURIComponent(q);
   };
 
   const handleNavigate = (url) => {
@@ -107,7 +107,7 @@ const BrowserApp = ({ data, onUpdate, instanceId }) => {
         </div>
         <div className="flex-1 flex items-center bg-slate-100 dark:bg-slate-700 rounded-full px-3 py-2 min-w-0 shadow-inner">
           <IconSearch className="text-slate-400 w-4 h-4 mr-2 shrink-0" />
-          <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="Search Google or enter web address" className="w-full bg-transparent outline-none text-sm text-slate-900 dark:text-slate-100 truncate" autoComplete="off" spellCheck="false" />
+          <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="Search Wikipedia or enter web address" className="w-full bg-transparent outline-none text-sm text-slate-900 dark:text-slate-100 truncate" autoComplete="off" spellCheck="false" />
         </div>
         <button onClick={openExternal} disabled={!currentUrl} className="p-2 rounded-full text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent transition-colors shrink-0" title="Open in actual browser tab">
           <IconExternal />
