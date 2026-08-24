@@ -1,5 +1,4 @@
-window.CanvasApps = window.CanvasApps || {};
-
+window.CanvasApps['MdEditor'] = `
 const { useState, useEffect, useRef, useCallback } = React;
 
 const DEFAULT_MD = "";
@@ -146,17 +145,17 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
   // ---------------------------------------------------------------------
   const htmlToMd = (html) => {
     let text = html;
-    text = text.replace(/<strong>([\s\S]*?)<\/strong>/gi, '**$1**');
-    text = text.replace(/<b>([\s\S]*?)<\/b>/gi, '**$1**');
-    text = text.replace(/<em>([\s\S]*?)<\/em>/gi, '*$1*');
-    text = text.replace(/<i>([\s\S]*?)<\/i>/gi, '*$1*');
-    text = text.replace(/<code>([\s\S]*?)<\/code>/gi, '`$1`');
-    text = text.replace(/<br\s*\/?>/gi, ' ');
-    text = text.replace(/<div>([\s\S]*?)<\/div>/gi, ' $1');
+    text = text.replace(/<strong>([\\s\\S]*?)<\\/strong>/gi, '**$1**');
+    text = text.replace(/<b>([\\s\\S]*?)<\\/b>/gi, '**$1**');
+    text = text.replace(/<em>([\\s\\S]*?)<\\/em>/gi, '*$1*');
+    text = text.replace(/<i>([\\s\\S]*?)<\\/i>/gi, '*$1*');
+    text = text.replace(/<code>([\\s\\S]*?)<\\/code>/gi, '\`$1\`'.replace(/\`/g, String.fromCharCode(96)));
+    text = text.replace(/<br\\s*\\/?>/gi, ' ');
+    text = text.replace(/<div>([\\s\\S]*?)<\\/div>/gi, ' $1');
     text = text.replace(/<[^>]*>?/gm, '');
     const txt = document.createElement('textarea');
     txt.innerHTML = text;
-    return txt.value.replace(/\r?\n/g, ' ').replace(/\|/g, '\\|').trim() || ' ';
+    return txt.value.replace(/\\r?\\n/g, ' ').replace(/\\|/g, '\\\\|').trim() || ' ';
   };
 
   const syncTableToMarkdown = (tableNode, tableIndex) => {
@@ -181,14 +180,14 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
           if (tokenIndex === -1) continue;
 
           if (i === tableIndex) {
-            const match = token.raw.match(/^(\s*)([\s\S]*?)(\s*)$/);
+            const match = token.raw.match(/^(\\s*)([\\s\\S]*?)(\\s*)$/);
             const leadingSpace = match ? match[1] : '';
-            const trailingSpace = match ? match[3] : '\n\n';
+            const trailingSpace = match ? match[3] : '\\n\\n';
 
             let md = leadingSpace;
-            md += '| ' + headers.join(' | ') + ' |\n';
-            md += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
-            rows.forEach((row) => { md += '| ' + row.join(' | ') + ' |\n'; });
+            md += '| ' + headers.join(' | ') + ' |\\n';
+            md += '| ' + headers.map(() => '---').join(' | ') + ' |\\n';
+            rows.forEach((row) => { md += '| ' + row.join(' | ') + ' |\\n'; });
             md = md.trimEnd() + trailingSpace;
 
             newMd = newMd.substring(0, tokenIndex) + md + newMd.substring(tokenIndex + token.raw.length);
@@ -261,8 +260,8 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     if (!isReady || !window.marked || !window.DOMPurify) return;
     try {
       const textToParse = markdown
-        .replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$')
-        .replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$');
+        .replace(/\\\\\\(([\\s\\S]*?)\\\\\\)/g, '$$$1$$')
+        .replace(/\\\\\\[([\\s\\S]*?)\\\\\\]/g, '$$$$$1$$$$');
 
       const rawHtml = window.marked.parse(textToParse);
       const cleanHtml = window.DOMPurify.sanitize(rawHtml, {
@@ -276,7 +275,9 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
   }, [markdown, isReady]);
 
   // ---------------------------------------------------------------------
-  // Enhance the rendered preview DOM (Step 2)
+  // Enhance the rendered preview DOM (Step 2 - runs AFTER commit, scoped
+  // strictly to THIS instance's previewRef so multiple open editors never
+  // interfere with each other)
   // ---------------------------------------------------------------------
   useEffect(() => {
     if (!isReady || !previewRef.current) return;
@@ -292,7 +293,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
       let lang = 'Text';
       const codeNode = pre.querySelector('code');
       if (codeNode && codeNode.className) {
-        const match = codeNode.className.match(/language-(\w+)/);
+        const match = codeNode.className.match(/language-(\\w+)/);
         if (match) {
           const rawLang = match[1];
           const langMap = {
@@ -512,15 +513,16 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
       let wildcards = [];
 
       if (matchMode === 'smart') {
-        wildcards = searchPattern.match(/\{(ANY|WORD|NUMBER)\}/g) || [];
+        wildcards = searchPattern.match(/\\{(ANY|WORD|NUMBER)\\}/g) || [];
         searchPattern = searchPattern.split('{NUMBER}').join('__NUM__');
         searchPattern = searchPattern.split('{WORD}').join('__WRD__');
         searchPattern = searchPattern.split('{ANY}').join('__ANY__');
         searchPattern = searchPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        searchPattern = searchPattern.split('__NUM__').join('(\\d+)');
+
+        searchPattern = searchPattern.split('__NUM__').join('(\\\\d+)');
         searchPattern = searchPattern.split('__WRD__').join('([A-Za-z]+)');
         searchPattern = searchPattern.split('__ANY__').join('(.*?)');
-        searchPattern = searchPattern.replace(/ /g, '\\s*');
+        searchPattern = searchPattern.replace(/ /g, '\\\\s*');
       }
 
       const regex = new RegExp(searchPattern, 'g');
@@ -534,7 +536,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
         newMd = markdown.replace(regex, (...args) => {
           let result = replaceText;
           const usageCount = { '{ANY}': 0, '{WORD}': 0, '{NUMBER}': 0 };
-          result = result.replace(/\{(ANY|WORD|NUMBER)\}/g, (m) => {
+          result = result.replace(/\\{(ANY|WORD|NUMBER)\\}/g, (m) => {
             let occurrence = 0;
             for (let i = 0; i < wildcards.length; i++) {
               if (wildcards[i] === m) {
@@ -544,7 +546,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
             }
             return m;
           });
-          result = result.replace(/\{(\d+)\}/g, (m, p1) => {
+          result = result.replace(/\\{(\\d+)\\}/g, (m, p1) => {
             const idx = parseInt(p1, 10);
             return args[idx] !== undefined ? args[idx] : m;
           });
@@ -604,7 +606,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
   // ---------------------------------------------------------------------
   const getCleanFilename = (extension) => {
     let baseName = ((title || 'Document') + '').trim();
-    baseName = baseName.replace(/\.(md|txt|json|docx|pdf)$/i, '');
+    baseName = baseName.replace(/\\.(md|txt|json|docx|pdf)$/i, '');
     return baseName + '.' + extension;
   };
 
@@ -630,6 +632,10 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     showNotification('Exported as .md successfully!');
   };
 
+  // ---------------------------------------------------------------------
+  // REAL one-click PDF download (html2pdf.js) - replaces the old
+  // print-dialog approach which never actually "downloaded" anything.
+  // ---------------------------------------------------------------------
   const exportPDF = async () => {
     if (!previewRef.current) return;
     if (!window.html2pdf) { showNotification('PDF engine is still loading...', 'error'); return; }
@@ -749,7 +755,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
               blocks.push(new Paragraph({ thematicBreak: true, spacing: { before: 200, after: 200 } }));
               break;
             case 'code':
-              token.text.split('\n').forEach((line) => blocks.push(new Paragraph({
+              token.text.split('\\n').forEach((line) => blocks.push(new Paragraph({
                 children: [new TextRun({ text: line, font: 'Courier New', size: 20 })],
                 spacing: { after: 0, before: 0 },
                 shading: { type: 'clear', color: 'auto', fill: 'EFEFEF' }
@@ -797,7 +803,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
   };
 
   // ---------------------------------------------------------------------
-  // Styles
+  // Styles (built without template literals to avoid nested-backtick bugs)
   // ---------------------------------------------------------------------
   const styleText = [
     ".markdown-body { line-height: 1.6; color: #333; transition: color 0.3s; }",
@@ -818,7 +824,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     ".markdown-body table th, .markdown-body table td { border-bottom: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; padding: 12px 16px; transition: background-color 0.2s, border 0.3s; }",
     ".markdown-body table th:last-child, .markdown-body table td:last-child { border-right: none; }",
     ".markdown-body table tr:last-child td { border-bottom: none; }",
-    ".markdown-body table th { background-color: #f1f5f9; font-weight: 600; color: #344155; }",
+    ".markdown-body table th { background-color: #f1f5f9; font-weight: 600; color: #334155; }",
     ".markdown-body table tr:nth-child(even) td { background-color: #f8fafc; }",
     ".markdown-body table td:focus, .markdown-body table th:focus { background-color: #eff6ff !important; outline: 2px solid #3b82f6; outline-offset: -2px; }",
     ".markdown-body hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: #e1e4e8; border: 0; transition: background 0.3s; }",
@@ -838,6 +844,8 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     "::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }",
     ".dark ::-webkit-scrollbar-thumb { background: #3f3f46; }",
     ".editor-textarea::-webkit-scrollbar-thumb { background: #4b5563; }",
+    // PDF export overrides - force light theme regardless of app dark mode,
+    // hide interactive-only UI, avoid mid-element page breaks
     ".pdf-export-clone { background:#ffffff !important; color:#1e293b !important; }",
     ".pdf-export-clone h1, .pdf-export-clone h2, .pdf-export-clone h3 { color:#0f172a !important; }",
     ".pdf-export-clone a { color:#0366d6 !important; }",
@@ -851,14 +859,14 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
     ".pdf-export-clone tr { page-break-inside: avoid !important; }",
     ".pdf-export-clone table th, .pdf-export-clone table td { border-color:#cbd5e1 !important; background:transparent !important; color:#1e293b !important; }",
     ".pdf-export-clone table th { background:#f1f5f9 !important; }"
-  ].join('\n');
+  ].join('\\n');
 
   if (!isReady) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-slate-50 dark:bg-zinc-950 flex-col gap-4">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-600 dark:text-zinc-400 font-medium font-sans">Booting Editor Engines...</p>
-      </div>
+      React.createElement('div', { className: 'flex h-full w-full items-center justify-center bg-slate-50 dark:bg-zinc-950 flex-col gap-4' },
+        React.createElement('div', { className: 'w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin' }),
+        React.createElement('p', { className: 'text-slate-600 dark:text-zinc-400 font-medium font-sans' }, 'Booting Editor Engines...')
+      )
     );
   }
 
@@ -1031,5 +1039,5 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
   );
 };
 
-window.CanvasApps['MdEditor'] = MDEditorApp;
-export default MDEditorApp;
+return MDEditorApp;
+`;
