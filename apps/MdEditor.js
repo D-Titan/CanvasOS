@@ -517,7 +517,7 @@ const MDEditorApp = ({ data, onUpdate, instanceId, title }) => {
         searchPattern = searchPattern.split('{NUMBER}').join('__NUM__');
         searchPattern = searchPattern.split('{WORD}').join('__WRD__');
         searchPattern = searchPattern.split('{ANY}').join('__ANY__');
-        searchPattern = searchPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 
         searchPattern = searchPattern.split('__NUM__').join('(\\\\d+)');
         searchPattern = searchPattern.split('__WRD__').join('([A-Za-z]+)');
