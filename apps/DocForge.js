@@ -303,14 +303,23 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
 
   useEffect(() => {
     const loadDependencies = async () => {
-      const addCss = (href) => {
+      // Helper to strip accidental markdown link wrappers if ever re-introduced
+      const sanitizeUrl = (url) => {
+        const match = url.match(/\((https?:\/\/[^\s)]+)\)/);
+        return match ? match[1] : url.replace(/[\[\]]/g, '').trim();
+      };
+
+      const addCss = (rawHref) => {
+        const href = sanitizeUrl(rawHref);
         if (document.querySelector('link[href="' + href + '"]')) return;
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = href;
         document.head.appendChild(link);
       };
-      const addScript = (src) => new Promise((resolve, reject) => {
+
+      const addScript = (rawSrc) => new Promise((resolve, reject) => {
+        const src = sanitizeUrl(rawSrc);
         if (document.querySelector('script[src="' + src + '"]')) return resolve();
         const script = document.createElement('script');
         script.src = src;
@@ -320,36 +329,36 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         document.head.appendChild(script);
       });
 
-      addCss('[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap)');
-      addCss('[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)');
-      addCss('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css)');
-      addCss('[https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css](https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css)');
+      addCss('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+      addCss('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+      addCss('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css');
+      addCss('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css');
 
       try {
         await Promise.all([
-          addScript('[https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.umd.js](https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.umd.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js](https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js)'),
-          addScript('[https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js](https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js)'),
-          addScript('[https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js](https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js)'),
-          addScript('[https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js](https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js)')
+          addScript('https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.umd.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'),
+          addScript('https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js'),
+          addScript('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js'),
+          addScript('https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js')
         ]);
         await Promise.all([
-          addScript('[https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.7/lib/index.umd.js](https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.7/lib/index.umd.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js)'),
-          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js)')
+          addScript('https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.7/lib/index.umd.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js'),
+          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js')
         ]);
 
         if (window.Prism && window.Prism.plugins && window.Prism.plugins.autoloader) {
-          window.Prism.plugins.autoloader.languages_path = '[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/)';
+          window.Prism.plugins.autoloader.languages_path = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/';
         }
 
         if (window.mermaid) {
