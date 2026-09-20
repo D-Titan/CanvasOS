@@ -12,15 +12,28 @@ const SAMPLE_MD = [
   'This document demonstrates **DocForge**, a client-side tool for turning raw',
   'notes into polished, exportable documents.',
   '',
+  '## Architecture Overview',
+  '',
+  '\`\`\`mermaid',
+  'graph TD',
+  '    A[Raw Markdown & Notes] --> B[DocForge Engine]',
+  '    B --> C{Processing Pipeline}',
+  '    C -->|Typeset| D[KaTeX Math]',
+  '    C -->|Highlight| E[Prism Code Blocks]',
+  '    C -->|Render| F[Mermaid Diagrams]',
+  '    D & E & F --> G[Interactive Preview]',
+  '    G --> H[Export PDF / DOCX / MD]',
+  '\`\`\`',
+  '',
   '## Key Findings',
   '',
   '1. Model accuracy improved by *14.2%* after fine-tuning.',
   '2. Inference latency dropped to \`42ms\` on average.',
-  '3. The relationship is described by:',
+  '3. The thermodynamic relation is defined by:',
   '',
   '$$ E = mc^{2} \\\\quad \\\\text{and} \\\\quad \\\\Delta G = \\\\Delta H - T\\\\Delta S $$',
   '',
-  '## Sample Code',
+  '## Implementation Logic',
   '',
   '\`\`\`python',
   'def softmax(x):',
@@ -28,16 +41,19 @@ const SAMPLE_MD = [
   '    return e_x / e_x.sum(axis=0)',
   '\`\`\`',
   '',
-  '## Comparison Table',
+  '## Performance Benchmarks',
   '',
-  '| Metric | Baseline | Improved |',
-  '|---|---|---|',
-  '| Accuracy | 81.3% | 95.5% |',
-  '| Latency | 120ms | 42ms |',
+  '| Metric | Baseline | Improved | Delta |',
+  '|---|---|---|---|',
+  '| Accuracy | 81.3% | 95.5% | +14.2% |',
+  '| Latency | 120ms | 42ms | -65.0% |',
+  '| Memory | 4.2 GB | 1.8 GB | -57.1% |',
   '',
-  '> Note: All benchmarks were run on identical hardware for fairness.',
+  '## Next Milestones',
   '',
-  'Visit [our repository](https://example.com) for full source access.'
+  '> Note: All benchmarks were run on identical hardware clusters for fairness.',
+  '',
+  'Visit [our repository](https://example.com) for full source access and test suites.'
 ].join('\\n');
 
 const THEMES = [
@@ -182,6 +198,36 @@ const preprocessMarkdown = (text) => {
   return out;
 };
 
+const extractHeadings = (mdText) => {
+  if (!mdText) return [];
+  const lines = mdText.split('\\n');
+  const headings = [];
+  let inCode = false;
+  let idx = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (trimmed.startsWith('\`\`\`')) {
+      inCode = !inCode;
+      continue;
+    }
+    if (inCode) continue;
+    const match = trimmed.match(/^(#{1,6})\\s+(.+)$/);
+    if (match) {
+      const level = match[1].length;
+      const rawTitle = match[2].trim();
+      const plain = rawTitle
+        .replace(/\\*\\*(.*?)\\*\\*/g, '$1')
+        .replace(/\\*(.*?)\\*/g, '$1')
+        .replace(/\`([^\`]+)\`/g, '$1')
+        .replace(/\\[([^\\]]+)\\]\\([^)]+\\)/g, '$1');
+      const slug = 'heading-' + (idx++) + '-' + plain.toLowerCase().replace(/[^\\w]+/g, '-').slice(0, 32);
+      headings.push({ level: level, title: plain, rawTitle: rawTitle, slug: slug, line: i });
+    }
+  }
+  return headings;
+};
+
 const getStats = (text) => {
   const trimmed = (text || '').trim();
   const words = trimmed ? trimmed.split(/\\s+/).length : 0;
@@ -208,6 +254,10 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
   const [lastLoadedFile, setLastLoadedFile] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
+  // Table of Contents & Mermaid States
+  const [showTocSidebar, setShowTocSidebar] = useState(true);
+  const [includeDocToc, setIncludeDocToc] = useState(false);
+
   const containerRef = useRef(null);
   const pageRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -218,6 +268,7 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
   const pageSize = PAGE_SIZES[pageSizeId] || PAGE_SIZES.a4;
   const margin = MARGINS[marginId] || MARGINS.normal;
   const stats = useMemo(() => getStats(content), [content]);
+  const headings = useMemo(() => extractHeadings(content), [content]);
 
   useEffect(() => {
     if (onUpdate) onUpdate({ content: content });
@@ -236,7 +287,7 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) setIsCompact(entry.contentRect.width < 700);
+      for (const entry of entries) setIsCompact(entry.contentRect.width < 750);
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -269,36 +320,46 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         document.head.appendChild(script);
       });
 
-      addCss('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-      addCss('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
-      addCss('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css');
-      addCss('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css');
+      addCss('[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Lora:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&display=swap)');
+      addCss('[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)');
+      addCss('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css)');
+      addCss('[https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css](https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css)');
 
       try {
         await Promise.all([
-          addScript('https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.umd.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js'),
-          addScript('https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js'),
-          addScript('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js')
+          addScript('[https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.umd.js](https://cdn.jsdelivr.net/npm/marked@12.0.1/lib/marked.umd.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js](https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js)'),
+          addScript('[https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js](https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js)'),
+          addScript('[https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js](https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js)'),
+          addScript('[https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js](https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js)')
         ]);
         await Promise.all([
-          addScript('https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.7/lib/index.umd.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js'),
-          addScript('https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js')
+          addScript('[https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.7/lib/index.umd.js](https://cdn.jsdelivr.net/npm/marked-katex-extension@5.1.7/lib/index.umd.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js)'),
+          addScript('[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js)')
         ]);
 
         if (window.Prism && window.Prism.plugins && window.Prism.plugins.autoloader) {
-          window.Prism.plugins.autoloader.languages_path = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/';
+          window.Prism.plugins.autoloader.languages_path = '[https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/](https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/)';
         }
+
+        if (window.mermaid) {
+          window.mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'loose',
+            theme: 'default'
+          });
+        }
+
         if (window.marked) {
           window.marked.setOptions({ gfm: true, breaks: false });
           if (window.markedKatex) {
@@ -322,67 +383,138 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
     } else resolve();
   });
 
+  // Markdown parsing & heading IDs
   useEffect(() => {
     if (!isReady || !window.marked || !window.DOMPurify) return;
     try {
+      let headingIndex = 0;
+      const renderer = new window.marked.Renderer();
+      const origCode = renderer.code.bind(renderer);
+
+      renderer.code = function (tokenOrText, lang, isEscaped) {
+        const text = typeof tokenOrText === 'object' && tokenOrText !== null ? tokenOrText.text : tokenOrText;
+        const language = typeof tokenOrText === 'object' && tokenOrText !== null ? tokenOrText.lang : lang;
+        const cleanLang = (language || '').trim().split(/\\s+/)[0].toLowerCase();
+
+        if (cleanLang === 'mermaid') {
+          const encoded = encodeURIComponent(text);
+          return '<div class="mermaid-block my-6 text-center" data-mermaid="' + encoded + '">' +
+            '<div class="mermaid-output flex justify-center py-2">' +
+              '<div class="text-xs text-slate-400 py-3 flex items-center justify-center gap-2">' +
+                '<i class="fa-solid fa-spinner fa-spin"></i> Rendering diagram...' +
+              '</div>' +
+            '</div>' +
+            '<pre class="hidden" style="display:none;">' + text + '</pre>' +
+          '</div>';
+        }
+        return origCode.call(this, tokenOrText, lang, isEscaped);
+      };
+
+      renderer.heading = function (tokenOrText, level, raw) {
+        const text = typeof tokenOrText === 'object' && tokenOrText !== null ? tokenOrText.text : tokenOrText;
+        const depth = typeof tokenOrText === 'object' && tokenOrText !== null ? tokenOrText.depth : level;
+        const plain = (text || '').replace(/<[^>]+>/g, '').trim();
+        const slug = 'heading-' + (headingIndex++) + '-' + plain.toLowerCase().replace(/[^\\w]+/g, '-').slice(0, 32);
+        return '<h' + depth + ' id="' + slug + '" class="doc-heading-anchor group relative">' +
+          text +
+          '<a href="#' + slug + '" class="ml-2 text-slate-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs no-underline" title="Link to section"><i class="fa-solid fa-link"></i></a>' +
+        '</h' + depth + '>';
+      };
+
       const processed = preprocessMarkdown(content);
-      const rawHtml = window.marked.parse(processed);
+      const rawHtml = window.marked.parse(processed, { renderer: renderer });
       const cleanHtml = window.DOMPurify.sanitize(rawHtml, {
-        ADD_ATTR: ['target', 'aria-hidden', 'class', 'style'],
-        USE_PROFILES: { html: true, mathMl: true }
+        ADD_ATTR: ['target', 'aria-hidden', 'class', 'style', 'data-mermaid', 'id'],
+        ADD_TAGS: ['svg', 'g', 'path', 'rect', 'circle', 'text', 'line', 'polygon', 'polyline', 'marker', 'defs', 'clipPath', 'tspan', 'style', 'nav'],
+        USE_PROFILES: { html: true, mathMl: true, svg: true }
       });
       setHtmlContent(cleanHtml);
 
       setTimeout(() => {
         if (window.Prism) window.Prism.highlightAll();
-        const preBlocks = document.querySelectorAll('.doc-markdown pre');
-        preBlocks.forEach((pre) => {
-          if (pre.parentElement.classList.contains('cb-wrapper')) return;
-          let lang = 'Text';
-          const codeNode = pre.querySelector('code');
-          if (codeNode && codeNode.className) {
-            const match = codeNode.className.match(/language-(\\w+)/);
-            if (match) lang = match[1].charAt(0).toUpperCase() + match[1].slice(1);
-          }
-          const wrapper = document.createElement('div');
-          wrapper.className = 'cb-wrapper relative my-5 border border-slate-200 rounded-xl shadow-sm overflow-hidden bg-white';
-          pre.parentNode.insertBefore(wrapper, pre);
-
-          const header = document.createElement('div');
-          header.className = 'cb-header flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-200 select-none';
-          const dotsHtml = '<div class="flex items-center gap-1.5 mr-3">' +
-            '<div class="w-2.5 h-2.5 rounded-full bg-red-300"></div>' +
-            '<div class="w-2.5 h-2.5 rounded-full bg-yellow-300"></div>' +
-            '<div class="w-2.5 h-2.5 rounded-full bg-green-300"></div></div>';
-          const left = document.createElement('div');
-          left.className = 'flex items-center';
-          left.innerHTML = dotsHtml + '<span class="text-xs font-semibold tracking-wide text-slate-500 font-mono">' + lang + '</span>';
-
-          const copyBtn = document.createElement('button');
-          copyBtn.className = 'copy-btn flex items-center gap-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md transition-colors';
-          copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i><span>Copy</span>';
-          copyBtn.onclick = () => {
-            const code = codeNode ? codeNode.innerText : '';
-            navigator.clipboard.writeText(code).then(() => {
-              copyBtn.innerHTML = '<i class="fa-solid fa-check text-green-600"></i><span class="text-green-600">Copied</span>';
-              setTimeout(() => { copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i><span>Copy</span>'; }, 1800);
-            }).catch(() => {});
-          };
-
-          header.appendChild(left);
-          header.appendChild(copyBtn);
-          const body = document.createElement('div');
-          body.className = 'cb-body bg-white';
-          pre.classList.add('!m-0', '!border-0', '!rounded-none', '!bg-transparent');
-          body.appendChild(pre);
-          wrapper.appendChild(header);
-          wrapper.appendChild(body);
-        });
       }, 10);
     } catch (err) {
       console.error('Parse error:', err);
     }
   }, [content, isReady]);
+
+  // Mermaid Diagram Render Effect
+  useEffect(() => {
+    if (!isReady || !htmlContent || !window.mermaid || !pageRef.current) return;
+
+    let active = true;
+    const renderMermaid = async () => {
+      const blocks = pageRef.current.querySelectorAll('.mermaid-block');
+      if (!blocks || blocks.length === 0) return;
+
+      let mTheme = 'default';
+      if (themeId === 'sepia' || themeId === 'academic') mTheme = 'neutral';
+      else if (themeId === 'slate') mTheme = 'base';
+      else if (themeId === 'notion') mTheme = 'neutral';
+
+      try {
+        window.mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'loose',
+          theme: mTheme,
+          fontFamily: theme.vars['--doc-font'] ? theme.vars['--doc-font'].replace(/"/g, '').split(',')[0] : 'Inter'
+        });
+      } catch (e) {
+        // pass
+      }
+
+      for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
+        const encoded = block.getAttribute('data-mermaid');
+        if (!encoded) continue;
+        const code = decodeURIComponent(encoded);
+        const output = block.querySelector('.mermaid-output');
+        if (!output) continue;
+
+        const renderId = 'docforge-mermaid-' + Date.now() + '-' + i;
+        try {
+          const { svg } = await window.mermaid.render(renderId, code);
+          if (active && output) {
+            output.innerHTML = svg;
+            const svgEl = output.querySelector('svg');
+            if (svgEl) {
+              svgEl.style.maxWidth = '100%';
+              svgEl.style.height = 'auto';
+              svgEl.style.display = 'block';
+              svgEl.style.margin = '0 auto';
+            }
+          }
+        } catch (err) {
+          if (active && output) {
+            output.innerHTML = [
+              '<div class="inline-block p-3 my-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs text-left font-mono max-w-full overflow-x-auto shadow-xs">',
+              '<div class="font-bold flex items-center gap-1.5 mb-1 text-amber-900"><i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Mermaid Warning</div>',
+              '<div class="text-[11px] text-amber-700 whitespace-pre-wrap">' + (err.message || 'Invalid diagram syntax') + '</div>',
+              '</div>'
+            ].join('');
+          }
+          const stray = document.getElementById(renderId) || document.getElementById('d' + renderId);
+          if (stray && stray.parentNode) stray.parentNode.removeChild(stray);
+        }
+      }
+    };
+
+    const timer = setTimeout(renderMermaid, 50);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [htmlContent, themeId, isReady, theme]);
+
+  const scrollToHeading = (slug) => {
+    if (!pageRef.current) return;
+    const target = pageRef.current.querySelector('#' + slug);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.classList.add('heading-highlight');
+      setTimeout(() => target.classList.remove('heading-highlight'), 1600);
+    }
+  };
 
   const showNotification = (msg, type) => {
     setNotification({ msg: msg, type: type || 'success' });
@@ -433,20 +565,68 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
   };
 
   const buildPrintCss = () => {
+    const bgColor = theme.vars['--doc-bg'] || '#ffffff';
     return [
-      '@page { size: ' + pageSize.printSize + '; margin: ' + margin.mm + 'mm; }',
-      'html,body{background:#fff !important;margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}',
-      '.doc-page{box-shadow:none !important;margin:0 !important;width:auto !important;transform:none !important;padding:0 !important;}',
-      '.doc-markdown{overflow:visible !important;}',
-      '.doc-markdown pre,.doc-markdown code{white-space:pre-wrap !important;word-break:break-word !important;overflow:visible !important;max-height:none !important;}',
-      '.doc-markdown .cb-body{overflow:visible !important;max-height:none !important;}',
-      '.doc-markdown table{overflow:visible !important;width:100% !important;}',
-      '.doc-markdown img{max-width:100% !important;}',
-      '.copy-btn{display:none !important;}',
-      '.doc-markdown h1,.doc-markdown h2,.doc-markdown h3{page-break-after:avoid;break-after:avoid-page;}',
-      '.doc-markdown .cb-wrapper,.doc-markdown table,.doc-markdown img{page-break-inside:avoid;break-inside:avoid-page;}',
-      '.doc-markdown tr{page-break-inside:avoid;}',
-      '.pdf-pagebreak{page-break-after:always;break-after:page;height:0;}'
+      '@page { size: ' + pageSize.printSize + '; margin: 0; }',
+      'html, body {',
+      '  margin: 0 !important;',
+      '  padding: 0 !important;',
+      '  background: ' + bgColor + ' !important;',
+      '  background-color: ' + bgColor + ' !important;',
+      '  -webkit-print-color-adjust: exact !important;',
+      '  print-color-adjust: exact !important;',
+      '}',
+      '.print-layout {',
+      '  width: 100% !important;',
+      '  border-collapse: collapse !important;',
+      '  border-spacing: 0 !important;',
+      '  background: ' + bgColor + ' !important;',
+      '}',
+      '.print-spacer-top {',
+      '  height: ' + margin.mm + 'mm !important;',
+      '  padding: 0 !important;',
+      '  margin: 0 !important;',
+      '  border: none !important;',
+      '}',
+      '.print-spacer-bottom {',
+      '  height: ' + margin.mm + 'mm !important;',
+      '  padding: 0 !important;',
+      '  margin: 0 !important;',
+      '  border: none !important;',
+      '}',
+      '.print-content-cell {',
+      '  padding: 0 ' + margin.mm + 'mm !important;',
+      '  vertical-align: top !important;',
+      '  border: none !important;',
+      '  background: transparent !important;',
+      '}',
+      '.doc-page {',
+      '  box-shadow: none !important;',
+      '  margin: 0 !important;',
+      '  width: 100% !important;',
+      '  max-width: 100% !important;',
+      '  min-height: auto !important;',
+      '  transform: none !important;',
+      '  background: transparent !important;',
+      '  padding: 0 !important;',
+      '}',
+      '.doc-markdown { overflow: visible !important; }',
+      '.doc-markdown pre, .doc-markdown code { white-space: pre-wrap !important; word-break: break-word !important; overflow: visible !important; max-height: none !important; }',
+      '.doc-markdown pre { border: 1px solid var(--doc-border) !important; background: #ffffff !important; }',
+      '.doc-markdown ul { list-style-type: disc !important; padding-left: 1.5em !important; margin-bottom: 14px !important; }',
+      '.doc-markdown ol { list-style-type: decimal !important; padding-left: 1.5em !important; margin-bottom: 14px !important; }',
+      '.doc-markdown li { margin-bottom: 0.3em !important; padding-left: 0.2em !important; }',
+      '.doc-markdown li::marker { color: var(--doc-accent) !important; }',
+      '.doc-markdown table { overflow: visible !important; width: 100% !important; }',
+      '.doc-markdown img { max-width: 100% !important; }',
+      '.mermaid-block { page-break-inside: avoid !important; break-inside: avoid-page !important; margin: 20px 0 !important; }',
+      '.mermaid-block svg { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; }',
+      '.doc-toc-container { page-break-inside: avoid !important; break-inside: avoid-page !important; }',
+      '.heading-anchor-link, .copy-btn { display: none !important; }',
+      '.doc-markdown h1, .doc-markdown h2, .doc-markdown h3 { page-break-after: avoid; break-after: avoid-page; }',
+      '.doc-markdown pre, .doc-markdown table, .doc-markdown img { page-break-inside: avoid; break-inside: avoid-page; }',
+      '.doc-markdown tr { page-break-inside: avoid; }',
+      '.pdf-pagebreak { page-break-after: always; break-after: page; height: 0; }'
     ].join('\\n');
   };
 
@@ -461,7 +641,13 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
     document.querySelectorAll('style, link[rel="stylesheet"]').forEach((s) => doc.write(s.outerHTML));
     doc.write('<style>' + buildPrintCss() + '</style>');
     doc.write('</head><body>');
-    doc.write(pageRef.current.outerHTML);
+    doc.write(
+      '<table class="print-layout">' +
+        '<thead><tr><td class="print-spacer-top"></td></tr></thead>' +
+        '<tbody><tr><td class="print-content-cell">' + pageRef.current.outerHTML + '</td></tr></tbody>' +
+        '<tfoot><tr><td class="print-spacer-bottom"></td></tr></tfoot>' +
+      '</table>'
+    );
     doc.write('</body></html>');
     doc.close();
     setTimeout(() => {
@@ -608,9 +794,23 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
             blocks.push(new Paragraph({ thematicBreak: true, spacing: { before: 200, after: 200 } }));
           } else if (token.type === 'code') {
             const lang = (token.lang || 'text').trim().split(/\\s+/)[0].toLowerCase();
-            await ensureLang(lang);
-            blocks = blocks.concat(highlightCodeToParagraphs(token.text, lang, window.docx));
-            blocks.push(new Paragraph({ text: '' }));
+            if (lang === 'mermaid') {
+              blocks.push(new Paragraph({
+                children: [
+                  new TextRun({ text: '📊 Diagram (Mermaid):', bold: true, size: 20, color: accentHex }),
+                  new TextRun({ text: '\\n' + token.text, font: 'JetBrains Mono', size: 17, color: '475569' })
+                ],
+                border: { left: { style: BorderStyle.SINGLE, size: 16, color: accentHex, space: 8 } },
+                shading: { type: 'clear', color: 'auto', fill: 'F8FAFC' },
+                spacing: { before: 140, after: 180 },
+                indent: { left: 300 }
+              }));
+              blocks.push(new Paragraph({ text: '' }));
+            } else {
+              await ensureLang(lang);
+              blocks = blocks.concat(highlightCodeToParagraphs(token.text, lang, window.docx));
+              blocks.push(new Paragraph({ text: '' }));
+            }
           } else if (token.type && /katex/i.test(token.type)) {
             blocks.push(new Paragraph({ children: [new TextRun({ text: texToUnicode(token.text || ''), italics: true, font: 'Cambria Math', color: '6D28D9' })], alignment: AlignmentType.CENTER, spacing: { before: 120, after: 200 } }));
           } else if (token.type === 'html' && /pdf-pagebreak/.test(token.raw || '')) {
@@ -629,6 +829,37 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         docChildren.push(new Paragraph({ children: [new TextRun({ text: title, bold: true, size: 56, color: theme.vars['--doc-heading'].replace('#', '').toUpperCase(), font: theme.vars['--doc-heading-font'].replace(/"/g, '').split(',')[0] })], spacing: { after: 60 } }));
         docChildren.push(new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: accentHex } }, spacing: { after: 300 } }));
       }
+
+      // Include Table of Contents in Word Document if enabled
+      if (includeDocToc && headings.length > 0) {
+        docChildren.push(new Paragraph({
+          children: [new TextRun({
+            text: 'Table of Contents',
+            bold: true,
+            size: 28,
+            color: theme.vars['--doc-heading'].replace('#', '').toUpperCase(),
+            font: theme.vars['--doc-heading-font'].replace(/"/g, '').split(',')[0]
+          })],
+          spacing: { before: 160, after: 120 }
+        }));
+        headings.forEach((h) => {
+          const indent = (h.level - 1) * 360;
+          docChildren.push(new Paragraph({
+            children: [
+              new TextRun({
+                text: (h.level === 1 ? '• ' : '– ') + h.title,
+                size: h.level === 1 ? 21 : 19,
+                bold: h.level === 1,
+                color: h.level === 1 ? '1E293B' : '475569'
+              })
+            ],
+            indent: { left: indent },
+            spacing: { after: 60 }
+          }));
+        });
+        docChildren.push(new Paragraph({ thematicBreak: true, spacing: { before: 140, after: 240 } }));
+      }
+
       const bodyBlocks = await processBlockTokens(tokens);
       docChildren = docChildren.concat(bodyBlocks);
 
@@ -682,7 +913,7 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
     return (
       <div className="flex h-full w-full items-center justify-center bg-slate-50 flex-col gap-4">
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-slate-600 font-medium">Loading DocForge...</p>
+        <p className="text-slate-600 font-medium">Loading DocForge with Mermaid & TOC...</p>
       </div>
     );
   }
@@ -701,12 +932,18 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         '.doc-markdown p{margin:0 0 16px 0;}',
         '.doc-markdown a{color:var(--doc-accent);text-decoration:none;}',
         '.doc-markdown a:hover{text-decoration:underline;}',
-        '.doc-markdown ul,.doc-markdown ol{padding-left:1.6em;margin-bottom:16px;}',
-        '.doc-markdown li{margin-bottom:0.3em;}',
+
+        '.doc-markdown ul{list-style-type:disc;padding-left:1.5em;margin-bottom:16px;}',
+        '.doc-markdown ol{list-style-type:decimal;padding-left:1.5em;margin-bottom:16px;}',
+        '.doc-markdown ul ul{list-style-type:circle;}',
+        '.doc-markdown ul ul ul{list-style-type:square;}',
+        '.doc-markdown li{margin-bottom:0.35em;padding-left:0.25em;}',
+        '.doc-markdown li::marker{color:var(--doc-accent);}',
+
         '.doc-markdown blockquote{margin:0 0 16px 0;padding:8px 16px;border-left:4px solid var(--doc-accent);background:var(--doc-quote-bg);color:var(--doc-quote-text);}',
         '.doc-markdown code{font-family:"JetBrains Mono",monospace;font-size:0.85em;background:#f1f5f9;color:#be185d;padding:0.15em 0.4em;border-radius:4px;}',
         '.doc-markdown pre code{background:transparent;color:inherit;padding:0;}',
-        '.doc-markdown pre{padding:14px 16px;overflow-x:auto;font-size:13px;}',
+        '.doc-markdown pre{padding:14px 16px;margin:20px 0;font-size:13px;border-radius:8px;border:1px solid var(--doc-border);background:#ffffff;overflow:visible;white-space:pre-wrap;word-break:break-word;max-height:none;}',
         '.doc-markdown table{border-collapse:separate;border-spacing:0;width:100%;margin-bottom:1.4em;border:1px solid var(--doc-border);border-radius:8px;overflow:hidden;}',
         '.doc-markdown th,.doc-markdown td{border-bottom:1px solid var(--doc-border);border-right:1px solid var(--doc-border);padding:10px 14px;text-align:left;}',
         '.doc-markdown th:last-child,.doc-markdown td:last-child{border-right:none;}',
@@ -716,21 +953,50 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         '.doc-markdown img{max-width:100%;border-radius:6px;}',
         '.doc-markdown .pdf-pagebreak{display:block;border-top:1px dashed var(--doc-border);margin:32px 0;position:relative;height:0;}',
         '.pdf-pagebreak::after{content:"Page Break";position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--doc-bg);padding:0 8px;font-size:10px;color:#94a3b8;font-family:sans-serif;}',
+
+        '/* Mermaid styling */',
+        '.mermaid-block { overflow-x: auto; margin: 24px 0; }',
+        '.mermaid-block svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }',
+
+        '/* TOC smooth anchor highlight */',
+        '.heading-highlight { outline: 2px solid var(--doc-accent); outline-offset: 4px; border-radius: 4px; background-color: rgba(37,99,235,0.06); transition: all 0.3s ease; }',
+
         '::-webkit-scrollbar{width:8px;height:8px;} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}'
       ].join('\\n') }} />
 
       <input type="file" ref={fileInputRef} accept=".md,.txt,.markdown" onChange={handleFileInput} className="hidden" />
 
-      <header className="bg-white border-b border-slate-200 shadow-sm px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0 overflow-x-auto no-print">
-        <div className="flex bg-slate-100 p-0.5 rounded-md border border-slate-200 flex-shrink-0">
-          <button onClick={() => setViewMode('edit')} className={cx('flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors', viewMode === 'edit' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
-            <i className="fa-solid fa-pen"></i> {!isCompact && <span>Edit</span>}
-          </button>
-          <button onClick={() => setViewMode('split')} className={cx('flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors', viewMode === 'split' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
-            <i className="fa-solid fa-columns"></i> {!isCompact && <span>Split</span>}
-          </button>
-          <button onClick={() => setViewMode('preview')} className={cx('flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors', viewMode === 'preview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
-            <i className="fa-solid fa-eye"></i> {!isCompact && <span>Preview</span>}
+      {/* Main App Header */}
+      <header className="bg-white border-b border-slate-200 shadow-sm px-3 py-2 flex items-center justify-between gap-2 flex-shrink-0 no-print">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex bg-slate-100 p-0.5 rounded-md border border-slate-200 flex-shrink-0">
+            <button onClick={() => setViewMode('edit')} className={cx('flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors', viewMode === 'edit' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
+              <i className="fa-solid fa-pen"></i> {!isCompact && <span>Edit</span>}
+            </button>
+            <button onClick={() => setViewMode('split')} className={cx('flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors', viewMode === 'split' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
+              <i className="fa-solid fa-columns"></i> {!isCompact && <span>Split</span>}
+            </button>
+            <button onClick={() => setViewMode('preview')} className={cx('flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors', viewMode === 'preview' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-600 hover:text-slate-900')}>
+              <i className="fa-solid fa-eye"></i> {!isCompact && <span>Preview</span>}
+            </button>
+          </div>
+
+          {/* TOC Sidebar Toggle Button */}
+          <button
+            onClick={() => setShowTocSidebar(!showTocSidebar)}
+            className={cx(
+              'flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded border transition-colors',
+              showTocSidebar ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            )}
+            title="Toggle Table of Contents Outline"
+          >
+            <i className="fa-solid fa-list-ul"></i>
+            {!isCompact && <span>Outline</span>}
+            {headings.length > 0 && (
+              <span className={cx('px-1.5 py-0.2 rounded-full text-[10px] font-mono font-semibold', showTocSidebar ? 'bg-blue-200 text-blue-800' : 'bg-slate-200 text-slate-700')}>
+                {headings.length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -740,16 +1006,37 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
               <i className="fa-solid fa-palette"></i> {!isCompact && <span>Design</span>}
             </button>
             {showDesign && (
-              <div className="absolute top-9 right-0 w-72 bg-white shadow-2xl rounded-xl border border-slate-200 z-40 p-3 flex flex-col gap-3">
+              <div className="absolute top-0 right-full mr-2 w-80 bg-white shadow-2xl rounded-xl border border-slate-200 z-50 p-3.5 flex flex-col gap-3.5">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Theme</p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {THEMES.map((t) => (
-                      <button key={t.id} onClick={() => setThemeId(t.id)} className={cx('flex flex-col items-center gap-1 p-1.5 rounded-lg border text-[10px] font-semibold', themeId === t.id ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:bg-slate-50')}>
-                        <span className="w-4 h-4 rounded-full" style={{ background: t.swatch }}></span>
-                        <span className="truncate w-full text-center text-slate-600">{t.name}</span>
-                      </button>
-                    ))}
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Theme</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {THEMES.map((t) => {
+                      const isSelected = themeId === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setThemeId(t.id)}
+                          className={cx(
+                            'flex items-center gap-2 p-2 rounded-lg border text-left transition-all relative overflow-hidden',
+                            isSelected
+                              ? 'border-blue-500 bg-blue-50/70 shadow-xs ring-1 ring-blue-500'
+                              : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          )}
+                        >
+                          <span
+                            className="w-4 h-4 rounded-full flex-shrink-0 border border-black/10 shadow-xs"
+                            style={{ background: t.swatch }}
+                          />
+                          <span className={cx('text-xs font-medium truncate flex-1', isSelected ? 'text-blue-950 font-semibold' : 'text-slate-700')}>
+                            {t.name}
+                          </span>
+                          {isSelected && (
+                            <i className="fa-solid fa-check text-[10px] text-blue-600 flex-shrink-0"></i>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -770,10 +1057,16 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Zoom: {zoom}%</p>
                   <input type="range" min="60" max="150" step="5" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full" />
                 </div>
-                <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
-                  <input type="checkbox" checked={includeHeader} onChange={(e) => setIncludeHeader(e.target.checked)} />
-                  Include title header block
-                </label>
+                <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                    <input type="checkbox" checked={includeHeader} onChange={(e) => setIncludeHeader(e.target.checked)} />
+                    Include title header block
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                    <input type="checkbox" checked={includeDocToc} onChange={(e) => setIncludeDocToc(e.target.checked)} />
+                    Include Table of Contents in document
+                  </label>
+                </div>
               </div>
             )}
           </div>
@@ -808,10 +1101,85 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         </div>
       )}
 
+      {/* Main Workspace */}
       <main className={cx('flex-1 flex overflow-hidden min-h-0 min-w-0 relative', isCompact ? 'flex-col' : 'flex-row')}>
+        
+        {/* Table of Contents Sidebar */}
+        {showTocSidebar && (
+          <aside className={cx(
+            "flex-shrink-0 bg-white border-r border-slate-200 flex flex-col z-10 transition-all duration-200 shadow-xs",
+            isCompact ? "w-full max-h-48 border-b" : "w-60 h-full"
+          )}>
+            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <i className="fa-solid fa-list-ul text-blue-600 text-xs"></i>
+                <span className="text-xs font-semibold text-slate-800">Table of Contents</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[10px] font-mono text-slate-700 font-semibold">
+                  {headings.length}
+                </span>
+              </div>
+              <button 
+                onClick={() => setShowTocSidebar(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-200 text-xs transition-colors"
+                title="Hide Outline"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Quick in-document TOC toggle switch */}
+            <div className="px-3 py-2 bg-blue-50/70 border-b border-blue-100 flex items-center justify-between text-xs flex-shrink-0">
+              <span className="text-slate-700 text-[11px] font-medium">In Document:</span>
+              <button
+                onClick={() => setIncludeDocToc(!includeDocToc)}
+                className={cx(
+                  "px-2 py-0.5 rounded text-[11px] font-medium transition-colors flex items-center gap-1",
+                  includeDocToc ? "bg-blue-600 text-white shadow-xs" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"
+                )}
+                title="Toggle Table of Contents inside the document preview and exports"
+              >
+                <i className={cx("fa-solid", includeDocToc ? "fa-check" : "fa-plus")}></i>
+                <span>{includeDocToc ? "Included" : "Include"}</span>
+              </button>
+            </div>
+
+            {/* Headings Nav Tree */}
+            <div className="flex-1 overflow-y-auto p-2 space-y-0.5 min-h-0 text-xs">
+              {headings.length === 0 ? (
+                <div className="p-4 text-center text-slate-400 text-xs">
+                  <i className="fa-regular fa-bookmark text-2xl mb-2 text-slate-300 block"></i>
+                  <p className="font-medium text-slate-600 mb-1">No Headings</p>
+                  <p className="text-[11px] leading-relaxed text-slate-400">Add <code className="text-pink-600 bg-slate-100 px-1 rounded"># Title</code> or <code className="text-pink-600 bg-slate-100 px-1 rounded">## Heading</code> to generate an outline.</p>
+                </div>
+              ) : (
+                headings.map((h, i) => (
+                  <button
+                    key={h.slug + '-' + i}
+                    onClick={() => scrollToHeading(h.slug)}
+                    style={{ paddingLeft: \`\${Math.max(8, (h.level - 1) * 12 + 8)}px\` }}
+                    className={cx(
+                      "w-full text-left py-1.5 pr-2 rounded transition-colors flex items-start gap-1.5 group hover:bg-slate-100",
+                      h.level === 1 ? "font-semibold text-slate-900" : (h.level === 2 ? "font-medium text-slate-700" : "text-slate-500 text-[11px]")
+                    )}
+                    title={h.title}
+                  >
+                    <span className="text-[10px] text-slate-400 group-hover:text-blue-500 mt-0.5 flex-shrink-0">
+                      {h.level === 1 ? '§' : (h.level === 2 ? '•' : '–')}
+                    </span>
+                    <span className="truncate flex-1">{h.title}</span>
+                    <span className="text-[9px] text-slate-400 opacity-0 group-hover:opacity-100 uppercase font-mono">H{h.level}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </aside>
+        )}
+
+        {/* Editor Pane */}
         <div style={{ flexBasis: viewMode === 'split' ? splitRatio + '%' : '100%', display: viewMode === 'preview' ? 'none' : 'flex' }} className="flex-shrink-0 flex flex-col bg-[#1e1e1e] border-r border-[#333] min-h-0 min-w-0">
-          <div className="flex items-center px-3 py-1.5 bg-[#252526] border-b border-[#333] flex-shrink-0">
+          <div className="flex items-center justify-between px-3 py-1.5 bg-[#252526] border-b border-[#333] flex-shrink-0">
             <span className="text-gray-300 font-medium text-xs flex items-center gap-1.5"><i className="fa-solid fa-code"></i> Markdown Source</span>
+            <span className="text-gray-500 text-[11px] font-mono">Supports Mermaid, KaTeX, Tables</span>
           </div>
           <textarea
             value={content}
@@ -823,12 +1191,14 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
           />
         </div>
 
+        {/* Split Resizer */}
         {viewMode === 'split' && (
           <div className={cx('flex-none bg-slate-300 hover:bg-blue-400 transition-colors z-20 flex items-center justify-center', isCompact ? 'w-full h-2.5 cursor-row-resize' : 'w-1.5 h-full cursor-col-resize')} onMouseDown={startSplitDrag} onTouchStart={startSplitDrag}>
             <div className={cx('bg-slate-500 rounded-full pointer-events-none', isCompact ? 'w-8 h-1' : 'w-1 h-8')}></div>
           </div>
         )}
 
+        {/* Document Preview Pane */}
         <div style={{ flexBasis: viewMode === 'split' ? (100 - splitRatio) + '%' : '100%', display: viewMode === 'edit' ? 'none' : 'flex' }}
           className="flex-1 flex flex-col bg-slate-200 min-h-0 min-w-0 relative"
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
@@ -853,7 +1223,7 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
               <div style={{ transform: 'scale(' + scale + ')', transformOrigin: 'top center', transition: 'transform 0.15s ease' }}>
                 <div
                   ref={pageRef}
-                  className={cx('doc-page shadow-xl', isDragOver && 'ring-4 ring-blue-400')}
+                  className={cx('doc-page', isDragOver && 'ring-4 ring-blue-400')}
                   style={Object.assign({ width: pageWidthPx + 'px', minHeight: Math.round(pageWidthPx * 1.414) + 'px', padding: margin.px + 'px', background: theme.vars['--doc-bg'] }, theme.vars)}
                 >
                   {includeHeader && (
@@ -862,6 +1232,48 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
                       <div style={{ height: '3px', width: '64px', background: theme.vars['--doc-accent'], marginTop: '10px', borderRadius: '2px' }}></div>
                     </div>
                   )}
+
+                  {/* In-Document Table of Contents (Rendered inside document if enabled) */}
+                  {includeDocToc && headings.length > 0 && (
+                    <nav className="doc-toc-container my-6 p-4 rounded-lg border transition-all" style={{
+                      background: theme.vars['--doc-quote-bg'] || '#f8fafc',
+                      borderColor: theme.vars['--doc-border'] || '#e2e8f0'
+                    }}>
+                      <div className="flex items-center justify-between pb-2 mb-2 border-b" style={{ borderColor: theme.vars['--doc-border'] || '#e2e8f0' }}>
+                        <div className="flex items-center gap-2 font-bold text-xs" style={{ color: theme.vars['--doc-heading'] || '#0f172a', fontFamily: theme.vars['--doc-heading-font'] }}>
+                          <i className="fa-solid fa-list-ol text-[11px]" style={{ color: theme.vars['--doc-accent'] }}></i>
+                          <span>Table of Contents</span>
+                        </div>
+                        <span className="text-[10px] font-mono opacity-60" style={{ color: theme.vars['--doc-text'] }}>
+                          {headings.length} sections
+                        </span>
+                      </div>
+                      <div className="grid gap-1 text-xs">
+                        {headings.map((h, i) => (
+                          <a
+                            key={'doc-toc-' + i}
+                            href={'#' + h.slug}
+                            onClick={(e) => { e.preventDefault(); scrollToHeading(h.slug); }}
+                            style={{ paddingLeft: \`\${(h.level - 1) * 14}px\`, color: h.level === 1 ? theme.vars['--doc-heading'] : theme.vars['--doc-text'] }}
+                            className={cx(
+                              "flex items-center justify-between py-0.5 no-underline hover:underline transition-colors",
+                              h.level === 1 ? "font-semibold text-xs" : "font-normal text-[11px] opacity-85"
+                            )}
+                          >
+                            <span className="flex items-center gap-1.5 truncate">
+                              <span style={{ color: theme.vars['--doc-accent'] }} className="text-[9px]">
+                                {h.level === 1 ? '▸' : '•'}
+                              </span>
+                              <span className="truncate">{h.title}</span>
+                            </span>
+                            <span className="flex-1 border-b border-dotted mx-2 opacity-30" style={{ borderColor: theme.vars['--doc-border'] }}></span>
+                            <span className="text-[9px] font-mono opacity-50 flex-shrink-0">H{h.level}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </nav>
+                  )}
+
                   <div className="doc-markdown" dangerouslySetInnerHTML={{ __html: htmlContent }} />
                 </div>
               </div>
