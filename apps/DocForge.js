@@ -304,8 +304,6 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
   useEffect(() => {
     const loadDependencies = async () => {
       const cleanUrl = (url) => {
-        // const m = url.match(/\\((https?:\\/\\/[^\\s)]+)\\)/);
-        // return m ? m[1] : url.replace(/[\\[\\]]/g, '').trim();
         return url;
       };
 
