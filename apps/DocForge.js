@@ -31,7 +31,7 @@ const SAMPLE_MD = [
   '2. Inference latency dropped to \`42ms\` on average.',
   '3. The thermodynamic relation is defined by:',
   '',
-  '$$ E = mc^{2} \\\\quad \\\\text{and} \\\\quad \\\\Delta G = \\\\Delta H - T\\\\Delta S $$',
+  '$$E = mc^{2} \\\\quad \\\\text{and} \\\\quad \\\\Delta G = \\\\Delta H - T\\\\Delta S$$',
   '',
   '## Implementation Logic',
   '',
@@ -303,29 +303,28 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
 
   useEffect(() => {
     const loadDependencies = async () => {
-      // Helper to strip accidental markdown link wrappers if ever re-introduced
-      const sanitizeUrl = (url) => {
-        const match = url.match(/\((https?:\/\/[^\s)]+)\)/);
-        return match ? match[1] : url.replace(/[\[\]]/g, '').trim();
+      const cleanUrl = (url) => {
+        // const m = url.match(/\\((https?:\\/\\/[^\\s)]+)\\)/);
+        // return m ? m[1] : url.replace(/[\\[\\]]/g, '').trim();
+        return url;
       };
 
-      const addCss = (rawHref) => {
-        const href = sanitizeUrl(rawHref);
-        if (document.querySelector('link[href="' + href + '"]')) return;
+      const addCss = (href) => {
+        const url = cleanUrl(href);
+        if (document.querySelector('link[href="' + url + '"]')) return;
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = href;
+        link.href = url;
         document.head.appendChild(link);
       };
-
-      const addScript = (rawSrc) => new Promise((resolve, reject) => {
-        const src = sanitizeUrl(rawSrc);
-        if (document.querySelector('script[src="' + src + '"]')) return resolve();
+      const addScript = (src) => new Promise((resolve, reject) => {
+        const url = cleanUrl(src);
+        if (document.querySelector('script[src="' + url + '"]')) return resolve();
         const script = document.createElement('script');
-        script.src = src;
+        script.src = url;
         script.async = true;
         script.onload = resolve;
-        script.onerror = () => reject(new Error('Failed: ' + src));
+        script.onerror = () => reject(new Error('Failed: ' + url));
         document.head.appendChild(script);
       });
 
@@ -361,14 +360,6 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
           window.Prism.plugins.autoloader.languages_path = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/';
         }
 
-        if (window.mermaid) {
-          window.mermaid.initialize({
-            startOnLoad: false,
-            securityLevel: 'loose',
-            theme: 'default'
-          });
-        }
-
         if (window.marked) {
           window.marked.setOptions({ gfm: true, breaks: false });
           if (window.markedKatex) {
@@ -392,7 +383,7 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
     } else resolve();
   });
 
-  // Markdown parsing & heading IDs
+  // Location 1: Markdown parsing & Mermaid block creation
   useEffect(() => {
     if (!isReady || !window.marked || !window.DOMPurify) return;
     try {
@@ -407,8 +398,8 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
 
         if (cleanLang === 'mermaid') {
           const encoded = encodeURIComponent(text);
-          return '<div class="mermaid-block my-6 text-center" data-mermaid="' + encoded + '">' +
-            '<div class="mermaid-output flex justify-center py-2">' +
+          return '<div class="mermaid-block flex justify-center items-center my-6" data-mermaid="' + encoded + '">' +
+            '<div class="mermaid-output flex justify-center items-center py-2 w-full">' +
               '<div class="text-xs text-slate-400 py-3 flex items-center justify-center gap-2">' +
                 '<i class="fa-solid fa-spinner fa-spin"></i> Rendering diagram...' +
               '</div>' +
@@ -447,7 +438,7 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
     }
   }, [content, isReady]);
 
-  // Mermaid Diagram Render Effect
+  // Location 2: Theme-aware Mermaid compilation & responsive sizing
   useEffect(() => {
     if (!isReady || !htmlContent || !window.mermaid || !pageRef.current) return;
 
@@ -456,20 +447,43 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
       const blocks = pageRef.current.querySelectorAll('.mermaid-block');
       if (!blocks || blocks.length === 0) return;
 
-      let mTheme = 'default';
-      if (themeId === 'sepia' || themeId === 'academic') mTheme = 'neutral';
-      else if (themeId === 'slate') mTheme = 'base';
-      else if (themeId === 'notion') mTheme = 'neutral';
+      const fontName = theme.vars['--doc-font'] ? theme.vars['--doc-font'].replace(/"/g, '').split(',')[0].trim() : 'Inter';
+      const isDarkOrWarm = themeId === 'sepia' || themeId === 'academic';
 
       try {
         window.mermaid.initialize({
           startOnLoad: false,
           securityLevel: 'loose',
-          theme: mTheme,
-          fontFamily: theme.vars['--doc-font'] ? theme.vars['--doc-font'].replace(/"/g, '').split(',')[0] : 'Inter'
+          theme: 'base',
+          themeVariables: {
+            fontFamily: fontName,
+            fontSize: '13px',
+            darkMode: false,
+            primaryColor: theme.vars['--doc-quote-bg'] || '#f8fafc',
+            primaryTextColor: theme.vars['--doc-text'] || '#1e293b',
+            primaryBorderColor: theme.vars['--doc-accent'] || '#2563eb',
+            lineColor: theme.vars['--doc-accent'] || '#2563eb',
+            secondaryColor: theme.vars['--doc-table-head'] || '#f1f5f9',
+            tertiaryColor: theme.vars['--doc-bg'] || '#ffffff',
+            mainBkg: theme.vars['--doc-quote-bg'] || '#f8fafc',
+            nodeBorder: theme.vars['--doc-accent'] || '#2563eb',
+            nodeTextColor: theme.vars['--doc-text'] || '#1e293b',
+            clusterBkg: theme.vars['--doc-bg'] || '#ffffff',
+            clusterBorder: theme.vars['--doc-border'] || '#e2e8f0',
+            titleColor: theme.vars['--doc-heading'] || '#0f172a',
+            edgeLabelBackground: theme.vars['--doc-bg'] || '#ffffff'
+          },
+          flowchart: {
+            useMaxWidth: false,
+            htmlLabels: true,
+            curve: 'basis',
+            nodeSpacing: 35,
+            rankSpacing: 35,
+            padding: 12
+          }
         });
       } catch (e) {
-        // pass
+        console.warn('Mermaid config error:', e);
       }
 
       for (let i = 0; i < blocks.length; i++) {
@@ -487,18 +501,23 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
             output.innerHTML = svg;
             const svgEl = output.querySelector('svg');
             if (svgEl) {
-              svgEl.style.maxWidth = '100%';
+              svgEl.style.maxWidth = '85%';
               svgEl.style.height = 'auto';
               svgEl.style.display = 'block';
               svgEl.style.margin = '0 auto';
+              svgEl.style.boxSizing = 'border-box';
+              // Ensure texts within boxes don't wrap unexpectedly
+              svgEl.querySelectorAll('.node text, .label text').forEach((t) => {
+                t.style.fontFamily = fontName;
+              });
             }
           }
         } catch (err) {
           if (active && output) {
             output.innerHTML = [
               '<div class="inline-block p-3 my-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs text-left font-mono max-w-full overflow-x-auto shadow-xs">',
-              '<div class="font-bold flex items-center gap-1.5 mb-1 text-amber-900"><i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Mermaid Warning</div>',
-              '<div class="text-[11px] text-amber-700 whitespace-pre-wrap">' + (err.message || 'Invalid diagram syntax') + '</div>',
+              '<div class="font-bold flex items-center gap-1.5 mb-1 text-amber-900"><i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Diagram Syntax Note</div>',
+              '<div class="text-[11px] text-amber-700 whitespace-pre-wrap">' + (err.message || 'Invalid diagram structure') + '</div>',
               '</div>'
             ].join('');
           }
@@ -628,8 +647,8 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
       '.doc-markdown li::marker { color: var(--doc-accent) !important; }',
       '.doc-markdown table { overflow: visible !important; width: 100% !important; }',
       '.doc-markdown img { max-width: 100% !important; }',
-      '.mermaid-block { page-break-inside: avoid !important; break-inside: avoid-page !important; margin: 20px 0 !important; }',
-      '.mermaid-block svg { max-width: 100% !important; height: auto !important; display: block !important; margin: 0 auto !important; }',
+      '.mermaid-block { display: flex !important; justify-content: center !important; align-items: center !important; page-break-inside: avoid !important; break-inside: avoid-page !important; margin: 24px 0 !important; width: 100% !important; }',
+      '.mermaid-block svg { max-width: 85% !important; height: auto !important; display: block !important; margin: 0 auto !important; }',
       '.doc-toc-container { page-break-inside: avoid !important; break-inside: avoid-page !important; }',
       '.heading-anchor-link, .copy-btn { display: none !important; }',
       '.doc-markdown h1, .doc-markdown h2, .doc-markdown h3 { page-break-after: avoid; break-after: avoid-page; }',
@@ -839,7 +858,6 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         docChildren.push(new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: accentHex } }, spacing: { after: 300 } }));
       }
 
-      // Include Table of Contents in Word Document if enabled
       if (includeDocToc && headings.length > 0) {
         docChildren.push(new Paragraph({
           children: [new TextRun({
@@ -963,11 +981,13 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         '.doc-markdown .pdf-pagebreak{display:block;border-top:1px dashed var(--doc-border);margin:32px 0;position:relative;height:0;}',
         '.pdf-pagebreak::after{content:"Page Break";position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--doc-bg);padding:0 8px;font-size:10px;color:#94a3b8;font-family:sans-serif;}',
 
-        '/* Mermaid styling */',
-        '.mermaid-block { overflow-x: auto; margin: 24px 0; }',
-        '.mermaid-block svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }',
+        '/* Centered & Auto-fitted Mermaid Styling */',
+        '.mermaid-block { display: flex; justify-content: center; align-items: center; width: 100%; margin: 24px 0; overflow-x: auto; }',
+        '.mermaid-output { display: flex; justify-content: center; align-items: center; width: 100%; text-align: center; }',
+        '.mermaid-block svg { margin: 0 auto !important; display: block !important; max-width: 85% !important; height: auto !important; }',
+        '.mermaid-block svg .label, .mermaid-block svg .node text { font-size: 13px !important; }',
 
-        '/* TOC smooth anchor highlight */',
+        '/* Anchor highlight */',
         '.heading-highlight { outline: 2px solid var(--doc-accent); outline-offset: 4px; border-radius: 4px; background-color: rgba(37,99,235,0.06); transition: all 0.3s ease; }',
 
         '::-webkit-scrollbar{width:8px;height:8px;} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}'
@@ -990,7 +1010,6 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
             </button>
           </div>
 
-          {/* TOC Sidebar Toggle Button */}
           <button
             onClick={() => setShowTocSidebar(!showTocSidebar)}
             className={cx(
@@ -1112,7 +1131,6 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
 
       {/* Main Workspace */}
       <main className={cx('flex-1 flex overflow-hidden min-h-0 min-w-0 relative', isCompact ? 'flex-col' : 'flex-row')}>
-        
         {/* Table of Contents Sidebar */}
         {showTocSidebar && (
           <aside className={cx(
@@ -1136,7 +1154,6 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
               </button>
             </div>
 
-            {/* Quick in-document TOC toggle switch */}
             <div className="px-3 py-2 bg-blue-50/70 border-b border-blue-100 flex items-center justify-between text-xs flex-shrink-0">
               <span className="text-slate-700 text-[11px] font-medium">In Document:</span>
               <button
@@ -1152,7 +1169,6 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
               </button>
             </div>
 
-            {/* Headings Nav Tree */}
             <div className="flex-1 overflow-y-auto p-2 space-y-0.5 min-h-0 text-xs">
               {headings.length === 0 ? (
                 <div className="p-4 text-center text-slate-400 text-xs">
@@ -1188,7 +1204,7 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
         <div style={{ flexBasis: viewMode === 'split' ? splitRatio + '%' : '100%', display: viewMode === 'preview' ? 'none' : 'flex' }} className="flex-shrink-0 flex flex-col bg-[#1e1e1e] border-r border-[#333] min-h-0 min-w-0">
           <div className="flex items-center justify-between px-3 py-1.5 bg-[#252526] border-b border-[#333] flex-shrink-0">
             <span className="text-gray-300 font-medium text-xs flex items-center gap-1.5"><i className="fa-solid fa-code"></i> Markdown Source</span>
-            <span className="text-gray-500 text-[11px] font-mono">Supports Mermaid, KaTeX, Tables</span>
+            <span className="text-gray-500 text-[11px] font-mono">Mermaid, Math & Tables Supported</span>
           </div>
           <textarea
             value={content}
@@ -1242,7 +1258,6 @@ const DocForgeApp = ({ data, onUpdate, instanceId, title }) => {
                     </div>
                   )}
 
-                  {/* In-Document Table of Contents (Rendered inside document if enabled) */}
                   {includeDocToc && headings.length > 0 && (
                     <nav className="doc-toc-container my-6 p-4 rounded-lg border transition-all" style={{
                       background: theme.vars['--doc-quote-bg'] || '#f8fafc',
